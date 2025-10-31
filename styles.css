@@ -806,6 +806,9 @@ header h1 {
     color: #5F37EB;
     text-decoration: underline;
     cursor: pointer;
+    margin: 0;
+    padding: 0;
+    display: inline;
 }
 
 .wysiwyg-editor a:hover {

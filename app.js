@@ -1200,8 +1200,10 @@ function insertLink(index) {
         return;
     }
     
-    const selectedText = selection.toString().trim();
-    if (!selectedText) {
+    const range = selection.getRangeAt(0);
+    const selectedText = range.toString();
+    
+    if (!selectedText || selectedText.trim() === '') {
         alert('Пожалуйста, выделите текст для создания ссылки');
         return;
     }
@@ -1212,17 +1214,24 @@ function insertLink(index) {
         return;
     }
     
-    // Создаем ссылку
-    editor.focus();
-    document.execCommand('createLink', false, url);
+    // Создаем ссылку вручную, чтобы избежать лишних отступов
+    const link = document.createElement('a');
+    link.href = url;
+    link.style.color = '#5F37EB';
+    link.style.textDecoration = 'underline';
+    link.textContent = selectedText;
     
-    // Применяем стили к созданной ссылке
-    const links = editor.querySelectorAll('a[href="' + url + '"]');
-    if (links.length > 0) {
-        const lastLink = links[links.length - 1];
-        lastLink.style.color = '#5F37EB';
-        lastLink.style.textDecoration = 'underline';
-    }
+    // Удаляем выделенный текст и вставляем ссылку
+    range.deleteContents();
+    range.insertNode(link);
+    
+    // Перемещаем курсор после ссылки
+    range.setStartAfter(link);
+    range.setEndAfter(link);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    
+    editor.focus();
 }
 
 // Обработка загрузки изображения
