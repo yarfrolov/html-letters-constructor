@@ -777,6 +777,16 @@ header h1 {
     outline: none;
 }
 
+.wysiwyg-editor a {
+    color: #5F37EB;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.wysiwyg-editor a:hover {
+    color: #4527cc;
+}
+
 .wysiwyg-editor:focus {
     border-color: #667eea;
 }

@@ -688,7 +688,9 @@ function editBlock(blockId) {
                     <button type="button" onclick="formatText('italic', ${index})" title="Курсив"><i>I</i></button>
                     <button type="button" onclick="formatText('underline', ${index})" title="Подчеркнутый"><u>U</u></button>
                     <span class="toolbar-separator">|</span>
+                    <button type="button" onclick="insertLink(${index})" title="Вставить ссылку">🔗 Ссылка</button>
                     <button type="button" onclick="formatText('insertUnorderedList', ${index})" title="Список">• Список</button>
+                    <span class="toolbar-separator">|</span>
                     <button type="button" onclick="formatText('removeFormat', ${index})" title="Очистить">🗑️</button>
                 `;
                 wysiwygContainer.appendChild(toolbar);
@@ -1184,6 +1186,43 @@ function formatText(command, index) {
     
     editor.focus();
     document.execCommand(command, false, null);
+}
+
+// Вставка ссылки
+function insertLink(index) {
+    const editor = document.getElementById(`wysiwyg-${index}`);
+    if (!editor) return;
+    
+    // Получаем выделенный текст
+    const selection = window.getSelection();
+    if (!selection.rangeCount) {
+        alert('Пожалуйста, выделите текст для создания ссылки');
+        return;
+    }
+    
+    const selectedText = selection.toString().trim();
+    if (!selectedText) {
+        alert('Пожалуйста, выделите текст для создания ссылки');
+        return;
+    }
+    
+    // Запрашиваем URL
+    const url = prompt('Введите URL ссылки:', 'https://');
+    if (!url || url.trim() === '' || url === 'https://') {
+        return;
+    }
+    
+    // Создаем ссылку
+    editor.focus();
+    document.execCommand('createLink', false, url);
+    
+    // Применяем стили к созданной ссылке
+    const links = editor.querySelectorAll('a[href="' + url + '"]');
+    if (links.length > 0) {
+        const lastLink = links[links.length - 1];
+        lastLink.style.color = '#5F37EB';
+        lastLink.style.textDecoration = 'underline';
+    }
 }
 
 // Обработка загрузки изображения
