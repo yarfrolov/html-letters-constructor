@@ -106,6 +106,31 @@ function loadDefaultBlocks() {
                 id: generateId(),
                 name: 'М2: Фиолетовая кнопка',
                 html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td style="padding: 30px 20px; text-align: center;"><a href="https://portal.m2.ru" style="display: inline-block; padding: 12px 25px; background: #5F37EB; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 20px; border: solid 1px #9173FA; box-sizing: border-box;" data-editable="text" data-editable-href="href">Перейти на портал</a></td></tr></table>'
+            },
+            {
+                id: generateId(),
+                name: 'М2: Заголовок с Timeline',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><h2 style="font-size: 22px; margin-bottom: 1.25rem; font-weight: 600;" data-editable="text">Что тебя ждёт в ближайшие три месяца</h2><img src="https://via.placeholder.com/600x200" alt="Timeline" style="max-width: 100%; height: auto; display: block;" data-editable-src="src" /></td></tr></tbody></table></td></tr></table>'
+            },
+            {
+                id: generateId(),
+                name: 'М2: Расширенный текст с пунктами',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><p style="padding: 0px 0px 4px 0px;" data-editable="text"><strong style="color: #5F37EB;">В первый день</strong> ты подпишешь трудовой договор, получишь оборудование, почтовый аккаунт, личную страницу на портале, необходимые доступы и станешь участником рабочих чатов</p><p style="padding: 0px 0px 4px 0px;" data-editable="text"><strong style="color: #5F37EB;">В течение первой недели</strong> познакомишься с командой и получишь задачи на испытательный срок от руководителя. А коллеги из команды обучения пришлют тебе приглашение в календарь на welcome-встречу, где ты узнаешь ещё больше о М2.</p><p style="padding: 0px 0px 4px 0px;" data-editable="text"><strong style="color: #5F37EB;">Через две-три недели состоятся две встречи 1:1.</strong><br>Первая — с твоим HR, на которой вы обсудите первые дни в команде. Вторая — с руководителем, чтобы уточнить и закрепить задачи на испытательный срок.</p></td></tr></tbody></table></td></tr></table>'
+            },
+            {
+                id: generateId(),
+                name: 'М2: Контент с иллюстрацией',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><h2 style="font-size: 22px; margin-bottom: 1.25rem; font-weight: 600;" data-editable="text">Что ещё важно сделать?</h2></td></tr><tr><td><img src="https://via.placeholder.com/600x300" alt="Иллюстрация" style="max-width: 100%; height: auto; display: block;" data-editable-src="src" /></td></tr><tr><td><p style="padding-bottom:4px;" data-editable="text"><strong style="color: #5F37EB;">Перейди на портал</strong><br>Для входа используй данные от почтового аккаунта. Обрати внимание, портал доступен только из внутренней сети.</p></td></tr></tbody></table></td></tr></table>'
+            },
+            {
+                id: generateId(),
+                name: 'М2: Блок с ботом (2 колонки)',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td style="width:148px;"><p style="font-size: 14px; padding-top: 16px;" data-editable="text">Регистрируйся в боте <a href="#" style="color: #000;"><strong>"Random Drink M2"</strong></a> для знакомств с коллегами!</p></td><td><img src="https://via.placeholder.com/240x240" alt="QR Code" width="240" height="240" style="display: block; width: 240px; height: 240px;" data-editable-src="src" /></td></tr></tbody></table></td></tr></table>'
+            },
+            {
+                id: generateId(),
+                name: 'М2: Подпись HR с иконкой',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td style="padding-bottom: 4px; width: 172px;"><p data-editable="text">Твоя команда HR</p></td><td style="padding-bottom: 4px;"><img src="https://via.placeholder.com/24x24" alt="heart" width="24" height="24" style="display: block; width: 24px; height: 24px;" data-editable-src="src" /></td></tr></tbody></table></td></tr></table>'
             }
         ];
         saveBlocksToStorage();
