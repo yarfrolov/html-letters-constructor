@@ -607,10 +607,35 @@ header h1 {
 }
 
 .editor-panel {
+    position: sticky;
+    top: 20px;
+    height: calc(100vh - 40px);
     background: #f8f9fa;
     padding: 20px;
     border-radius: 12px;
     overflow-y: auto;
+    align-self: start;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    scrollbar-width: thin;
+    scrollbar-color: #667eea #f1f1f1;
+}
+
+.editor-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.editor-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.editor-panel::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 4px;
+}
+
+.editor-panel::-webkit-scrollbar-thumb:hover {
+    background: #5568d3;
 }
 
 .editor-panel h3 {
@@ -963,7 +988,10 @@ header h1 {
     }
     
     .editor-panel {
-        max-height: 400px;
+        position: relative;
+        top: auto;
+        height: auto;
+        max-height: 500px;
     }
 }
 
