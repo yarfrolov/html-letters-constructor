@@ -733,6 +733,25 @@ function editBlock(blockId) {
                 boldContainer.appendChild(boldLabel);
                 stylesContainer.appendChild(boldContainer);
                 
+                // Размер шрифта
+                const fontSizeContainer = document.createElement('div');
+                fontSizeContainer.className = 'style-control-item';
+                const fontSizeLabel = document.createElement('label');
+                fontSizeLabel.textContent = '🔤 Размер шрифта (px):';
+                const fontSizeInput = document.createElement('input');
+                fontSizeInput.type = 'number';
+                fontSizeInput.min = '8';
+                fontSizeInput.max = '72';
+                fontSizeInput.step = '1';
+                const currentFontSize = computedStyle.fontSize || window.getComputedStyle(element).fontSize || '16px';
+                fontSizeInput.value = parseInt(currentFontSize);
+                fontSizeInput.dataset.index = index;
+                fontSizeInput.dataset.type = 'fontSize';
+                fontSizeInput.className = 'small-input';
+                fontSizeContainer.appendChild(fontSizeLabel);
+                fontSizeContainer.appendChild(fontSizeInput);
+                stylesContainer.appendChild(fontSizeContainer);
+                
                 // Интерлиньяж
                 const lineHeightContainer = document.createElement('div');
                 lineHeightContainer.className = 'style-control-item';
@@ -891,6 +910,9 @@ function saveBlockEdits() {
             } else {
                 element.style.fontWeight = 'normal';
             }
+        } else if (type === 'fontSize') {
+            // Применяем размер шрифта
+            element.style.fontSize = input.value + 'px';
         } else if (type === 'lineHeight') {
             // Применяем интерлиньяж
             element.style.lineHeight = input.value;
