@@ -920,7 +920,14 @@ function saveBlockEdits() {
             // Проверяем, это WYSIWYG редактор или обычный input
             const wysiwygEditor = document.getElementById(`wysiwyg-${index}`);
             if (wysiwygEditor) {
-                element.innerHTML = wysiwygEditor.innerHTML;
+                // Очищаем HTML от лишних div и нормализуем
+                const originalHTML = wysiwygEditor.innerHTML;
+                const cleanedHTML = cleanWysiwygHTML(originalHTML);
+                
+                console.log('Original HTML:', originalHTML);
+                console.log('Cleaned HTML:', cleanedHTML);
+                
+                element.innerHTML = cleanedHTML;
             } else if (input.value !== undefined) {
                 element.textContent = input.value;
             }
@@ -1109,6 +1116,65 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Очистка HTML из WYSIWYG редактора
+function cleanWysiwygHTML(html) {
+    if (!html || html.trim() === '') {
+        return '';
+    }
+    
+    // Создаем временный элемент для обработки
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // Функция для обработки узлов
+    function processNode(node) {
+        // Если это DIV с содержимым, заменяем его содержимое + <br>
+        if (node.nodeName === 'DIV' && node.parentNode) {
+            // Создаем фрагмент для содержимого
+            const fragment = document.createDocumentFragment();
+            
+            // Добавляем <br> перед содержимым (если это не первый div)
+            if (node.previousSibling) {
+                fragment.appendChild(document.createElement('br'));
+            }
+            
+            // Переносим все дочерние узлы
+            while (node.firstChild) {
+                fragment.appendChild(node.firstChild);
+            }
+            
+            // Заменяем div на фрагмент
+            node.parentNode.replaceChild(fragment, node);
+        }
+    }
+    
+    // Обрабатываем все div элементы
+    const divs = Array.from(temp.querySelectorAll('div'));
+    divs.forEach(processNode);
+    
+    // Убираем пустые элементы
+    temp.querySelectorAll('span:empty, strong:empty, b:empty, i:empty, em:empty').forEach(el => el.remove());
+    
+    // Убираем лишние <br> в начале
+    while (temp.firstChild && temp.firstChild.nodeName === 'BR') {
+        temp.removeChild(temp.firstChild);
+    }
+    
+    // Получаем результат
+    let result = temp.innerHTML;
+    
+    // Убираем множественные <br> подряд (больше 2)
+    result = result.replace(/(<br\s*\/?>[\s\n]*){3,}/gi, '<br><br>');
+    
+    // Убираем пустые параграфы
+    result = result.replace(/<p>\s*<\/p>/gi, '');
+    
+    // Убираем webkit-специфичные стили
+    result = result.replace(/\s*style="[^"]*webkit[^"]*"/gi, '');
+    
+    return result.trim();
 }
 
 // Обработка табуляции в blockHTML (как в VS Code)

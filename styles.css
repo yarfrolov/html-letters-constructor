@@ -900,6 +900,11 @@ header h1 {
     color: #999;
 }
 
+.wysiwyg-editor div {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 /* Кнопка загрузки изображения */
 .image-upload-container {
     margin-top: 10px;
