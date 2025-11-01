@@ -415,6 +415,7 @@ function initializeEventListeners() {
     });
 
     document.getElementById('copyHTML').addEventListener('click', copyToClipboard);
+    document.getElementById('downloadHTML').addEventListener('click', downloadHTMLFile);
 }
 
 // Добавление нового блока администратором
@@ -1046,6 +1047,38 @@ function copyToClipboard() {
     textarea.select();
     document.execCommand('copy');
     alert('HTML скопирован в буфер обмена!');
+}
+
+// Скачивание HTML файла
+function downloadHTMLFile() {
+    const html = document.getElementById('exportHTML').value;
+    const subject = document.getElementById('emailSubject').value || 'letter';
+    
+    // Создаем безопасное имя файла из темы письма
+    const fileName = subject
+        .toLowerCase()
+        .replace(/[^a-zа-яё0-9\s-]/gi, '') // Удаляем специальные символы
+        .replace(/\s+/g, '-') // Заменяем пробелы на дефисы
+        .substring(0, 50) // Ограничиваем длину
+        || 'letter';
+    
+    // Создаем Blob с HTML содержимым
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    
+    // Создаем временную ссылку для скачивания
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${fileName}.html`;
+    
+    // Запускаем скачивание
+    document.body.appendChild(link);
+    link.click();
+    
+    // Очищаем
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+    
+    alert('HTML файл скачан!');
 }
 
 // Экранирование HTML

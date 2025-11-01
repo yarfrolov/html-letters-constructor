@@ -210,13 +210,11 @@ header h1 {
 /* Админ панель */
 .admin-section {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 50% 50%;
     gap: 30px;
 }
 
 .upload-area, .blocks-library {
-    background: #f8f9fa;
-    padding: 25px;
     border-radius: 12px;
 }
 
@@ -519,7 +517,6 @@ header h1 {
 }
 
 .email-canvas {
-    flex: 1;
     background: white;
     border: 2px dashed #e0e0e0;
     border-radius: 12px;
