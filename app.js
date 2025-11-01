@@ -416,6 +416,12 @@ function initializeEventListeners() {
 
     document.getElementById('copyHTML').addEventListener('click', copyToClipboard);
     document.getElementById('downloadHTML').addEventListener('click', downloadHTMLFile);
+    
+    // Обработчик табуляции для blockHTML (как в VS Code)
+    const blockHTML = document.getElementById('blockHTML');
+    if (blockHTML) {
+        blockHTML.addEventListener('keydown', handleBlockHTMLTab);
+    }
 }
 
 // Добавление нового блока администратором
@@ -575,7 +581,24 @@ function renderAvailableBlocks() {
     blocks.forEach(block => {
         const blockElement = document.createElement('div');
         blockElement.className = 'block-item';
-        blockElement.innerHTML = `<h4>${escapeHtml(block.name)}</h4>`;
+        
+        // Заголовок блока
+        const title = document.createElement('h4');
+        title.textContent = block.name;
+        blockElement.appendChild(title);
+        
+        // Превью блока
+        const preview = document.createElement('div');
+        preview.className = 'block-preview';
+        preview.innerHTML = block.html;
+        blockElement.appendChild(preview);
+        
+        // Кнопка добавления (при наведении)
+        const addButton = document.createElement('div');
+        addButton.className = 'block-add-overlay';
+        addButton.innerHTML = '<span>+ Добавить</span>';
+        blockElement.appendChild(addButton);
+        
         blockElement.addEventListener('click', () => addBlockToEmail(block));
         container.appendChild(blockElement);
     });
@@ -1086,6 +1109,89 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Обработка табуляции в blockHTML (как в VS Code)
+function handleBlockHTMLTab(e) {
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        
+        const textarea = e.target;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+        const beforeText = textarea.value.substring(0, start);
+        const afterText = textarea.value.substring(end);
+        
+        // Определяем отступ (4 пробела, как в VS Code по умолчанию)
+        const tab = '    ';
+        
+        if (e.shiftKey) {
+            // Shift+Tab - уменьшение отступа
+            if (selectedText.includes('\n')) {
+                // Если выделено несколько строк
+                const lines = selectedText.split('\n');
+                const unindentedLines = lines.map(line => {
+                    if (line.startsWith(tab)) {
+                        return line.substring(tab.length);
+                    } else if (line.startsWith(' ')) {
+                        // Удаляем до 4 пробелов
+                        let spacesToRemove = 0;
+                        for (let i = 0; i < Math.min(4, line.length); i++) {
+                            if (line[i] === ' ') spacesToRemove++;
+                            else break;
+                        }
+                        return line.substring(spacesToRemove);
+                    }
+                    return line;
+                });
+                const newText = unindentedLines.join('\n');
+                
+                textarea.value = beforeText + newText + afterText;
+                textarea.selectionStart = start;
+                textarea.selectionEnd = start + newText.length;
+            } else {
+                // Одна строка - убираем отступ в начале строки
+                const lineStart = beforeText.lastIndexOf('\n') + 1;
+                const lineBeforeText = textarea.value.substring(0, lineStart);
+                const currentLine = textarea.value.substring(lineStart, start) + selectedText;
+                const restOfLine = afterText.split('\n')[0];
+                const afterLine = afterText.substring(restOfLine.length);
+                
+                let newLine = currentLine + restOfLine;
+                if (newLine.startsWith(tab)) {
+                    newLine = newLine.substring(tab.length);
+                } else if (newLine.startsWith(' ')) {
+                    let spacesToRemove = 0;
+                    for (let i = 0; i < Math.min(4, newLine.length); i++) {
+                        if (newLine[i] === ' ') spacesToRemove++;
+                        else break;
+                    }
+                    newLine = newLine.substring(spacesToRemove);
+                }
+                
+                textarea.value = lineBeforeText + newLine + afterLine;
+                const newCursorPos = Math.max(lineStart, start - tab.length);
+                textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+            }
+        } else {
+            // Tab - добавление отступа
+            if (selectedText.includes('\n')) {
+                // Если выделено несколько строк, добавляем отступ к каждой
+                const lines = selectedText.split('\n');
+                const indentedLines = lines.map(line => tab + line);
+                const newText = indentedLines.join('\n');
+                
+                textarea.value = beforeText + newText + afterText;
+                textarea.selectionStart = start;
+                textarea.selectionEnd = start + newText.length;
+            } else {
+                // Одна строка или ничего не выделено - вставляем таб
+                textarea.value = beforeText + tab + selectedText + afterText;
+                textarea.selectionStart = textarea.selectionEnd = start + tab.length;
+            }
+        }
+    }
 }
 
 // Получение вычисленного цвета элемента

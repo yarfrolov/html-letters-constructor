@@ -250,9 +250,10 @@ header h1 {
     resize: vertical;
     background: #1e1e1e;
     color: #d4d4d4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     tab-size: 4;
-    white-space: pre;
-    overflow-wrap: normal;
     overflow-x: auto;
 }
 
@@ -477,6 +478,8 @@ header h1 {
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
 }
 
 .block-item:hover {
@@ -485,9 +488,63 @@ header h1 {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
+.block-item:hover .block-add-overlay {
+    opacity: 1;
+}
+
 .block-item h4 {
     color: #333;
     font-size: 15px;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 2;
+}
+
+.block-preview {
+    max-height: 150px;
+    overflow: hidden;
+    position: relative;
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 12px;
+    transform: scale(0.8);
+    transform-origin: top left;
+    width: 125%;
+    pointer-events: none;
+}
+
+.block-preview::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, #f8f9fa);
+    pointer-events: none;
+}
+
+.block-add-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(102, 126, 234, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 3;
+}
+
+.block-add-overlay span {
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .constructor {
@@ -797,6 +854,28 @@ header h1 {
     line-height: 1.6;
     color: #333;
     outline: none;
+}
+
+.wysiwyg-editor p,
+.wysiwyg-editor div,
+.wysiwyg-editor h1,
+.wysiwyg-editor h2,
+.wysiwyg-editor h3,
+.wysiwyg-editor ul,
+.wysiwyg-editor ol {
+    margin: 0;
+    padding: 0;
+}
+
+.wysiwyg-editor p + p,
+.wysiwyg-editor div + div {
+    margin-top: 0.5em;
+}
+
+.wysiwyg-editor br {
+    display: block;
+    content: "";
+    margin: 0;
 }
 
 .wysiwyg-editor a {
