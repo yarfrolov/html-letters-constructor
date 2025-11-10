@@ -361,6 +361,22 @@ header h1 {
     transform: translateY(-1px);
 }
 
+.btn-visual-admin {
+    padding: 8px 16px;
+    background: #5F37EB;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.btn-visual-admin:hover {
+    background: #4527cc;
+    transform: translateY(-1px);
+}
+
 .editing-indicator {
     background: #fff3cd;
     border: 2px solid #ffc107;

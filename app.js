@@ -2,6 +2,9 @@
 let blocks = [];
 let emailBlocks = [];
 let currentEditingBlock = null;
+let currentAdminEditingBlock = null;
+let currentEditorContext = null;
+let userPanelForcedVisible = false;
 let currentRole = null;
 let selectedRole = 'user';
 
@@ -458,6 +461,7 @@ function initializeEventListeners() {
     // Редактор
     document.getElementById('closeEditor').addEventListener('click', function() {
         document.querySelector('.editor-panel').classList.add('hidden');
+        resetEditorContext();
     });
     
     // Переключение режимов редактора
@@ -555,6 +559,7 @@ function renderAdminBlocks() {
             <pre>${escapeHtml(block.html)}</pre>
             <div class="admin-block-actions">
                 <button onclick="editAdminBlock('${block.id}')" class="btn-edit-admin">Редактировать</button>
+                <button onclick="editAdminBlockVisual('${block.id}')" class="btn-visual-admin">Визуально</button>
                 <button onclick="deleteBlock('${block.id}')" class="btn-delete-admin">Удалить</button>
             </div>
         `;
@@ -713,15 +718,69 @@ function editBlock(blockId) {
     if (!block) return;
 
     currentEditingBlock = blockId;
-    
+    currentAdminEditingBlock = null;
+    currentEditorContext = { type: 'email', blockId };
+
+    setEditorModeButtons('visual');
+    currentEditorMode = 'visual';
+
+    renderVisualBlockEditor(block);
+}
+
+function editAdminBlockVisual(blockId) {
+    const block = blocks.find(b => b.id === blockId);
+    if (!block) return;
+
+    const userPanel = document.getElementById('userPanel');
+    if (userPanel && userPanel.classList.contains('hidden')) {
+        userPanel.classList.remove('hidden');
+        userPanelForcedVisible = true;
+    }
+
+    currentAdminEditingBlock = blockId;
+    currentEditingBlock = null;
+    currentEditorContext = { type: 'admin', blockId };
+
+    setEditorModeButtons('visual');
+    currentEditorMode = 'visual';
+
+    renderVisualBlockEditor(block);
+}
+
+function setEditorModeButtons(mode) {
+    document.querySelectorAll('.editor-mode-btn').forEach(btn => {
+        if (btn.dataset.mode === mode) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+function getCurrentContextBlock() {
+    if (!currentEditorContext) return null;
+
+    if (currentEditorContext.type === 'email') {
+        return emailBlocks.find(b => b.id === currentEditorContext.blockId) || null;
+    }
+
+    if (currentEditorContext.type === 'admin') {
+        return blocks.find(b => b.id === currentEditorContext.blockId) || null;
+    }
+
+    return null;
+}
+
+function renderVisualBlockEditor(block) {
     const editorPanel = document.querySelector('.editor-panel');
     const editorContent = document.getElementById('editorContent');
+    if (!editorPanel || !editorContent) return;
     
-    // Парсим HTML и находим редактируемые элементы
+    // Парсим HTML и подготавливаем элементы для редактирования
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = block.html;
     
-    const editableElements = tempDiv.querySelectorAll('[data-editable], [data-editable-href], [data-editable-src]');
+    const editableElements = tempDiv.querySelectorAll('[data-editable], [data-editable-href], [data-editable-src], [data-editable-alt]');
     
     editorContent.innerHTML = '<p style="color: #666; margin-bottom: 20px;">Редактируйте содержимое блока:</p>';
     
@@ -732,9 +791,8 @@ function editBlock(blockId) {
     blockBgLabel.textContent = '🎨 Фон всего блока:';
     blockBgField.appendChild(blockBgLabel);
     
-    // Находим главную таблицу блока
     const mainTable = tempDiv.querySelector('table');
-    const currentBlockBg = mainTable ? (mainTable.style.background || mainTable.style.backgroundColor || '#ffffff') : '#ffffff';
+    const currentBlockBg = mainTable ? (mainTable.getAttribute('style')?.match(/background\s*:\s*([^;]+)/)?.[1] || mainTable.style.background || mainTable.style.backgroundColor || '#ffffff') : '#ffffff';
     
     const blockBgInput = document.createElement('input');
     blockBgInput.type = 'color';
@@ -745,7 +803,6 @@ function editBlock(blockId) {
     
     editorContent.appendChild(blockBgField);
     
-    // Разделитель
     const separator = document.createElement('hr');
     separator.style.margin = '20px 0';
     separator.style.border = 'none';
@@ -764,11 +821,9 @@ function editBlock(blockId) {
                 label.textContent = `Текст ${index + 1}:`;
                 field.appendChild(label);
                 
-                // WYSIWYG редактор для текста
                 const wysiwygContainer = document.createElement('div');
                 wysiwygContainer.className = 'wysiwyg-container';
                 
-                // Панель инструментов
                 const toolbar = document.createElement('div');
                 toolbar.className = 'wysiwyg-toolbar';
                 toolbar.innerHTML = `
@@ -783,7 +838,6 @@ function editBlock(blockId) {
                 `;
                 wysiwygContainer.appendChild(toolbar);
                 
-                // Редактируемая область
                 const editableDiv = document.createElement('div');
                 editableDiv.className = 'wysiwyg-editor';
                 editableDiv.contentEditable = true;
@@ -791,10 +845,8 @@ function editBlock(blockId) {
                 editableDiv.dataset.index = index;
                 editableDiv.dataset.type = 'text';
                 editableDiv.id = `wysiwyg-${index}`;
-                
-                // Предотвращаем добавление inline стилей с отступами
+            
                 editableDiv.addEventListener('input', function() {
-                    // Удаляем margin и padding из всех элементов
                     const allElements = this.querySelectorAll('*');
                     allElements.forEach(el => {
                         if (el.style) {
@@ -804,16 +856,14 @@ function editBlock(blockId) {
                             el.style.marginBottom = '';
                             el.style.paddingTop = '';
                             el.style.paddingBottom = '';
-                            
-                            // Удаляем пустые style атрибуты
+            
                             if (!el.style.cssText || el.style.cssText.trim() === '') {
                                 el.removeAttribute('style');
                             }
                         }
                     });
                 });
-                
-                // Обработка вставки текста
+            
                 editableDiv.addEventListener('paste', function(e) {
                     e.preventDefault();
                     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
@@ -823,11 +873,9 @@ function editBlock(blockId) {
                 wysiwygContainer.appendChild(editableDiv);
                 field.appendChild(wysiwygContainer);
                 
-                // Контролы форматирования
                 const stylesContainer = document.createElement('div');
                 stylesContainer.className = 'style-controls';
                 
-                // Получаем текущие стили
                 const computedStyle = element.style || {};
                 const currentColor = computedStyle.color || getComputedColor(element, 'color') || '#333333';
                 const currentBgColor = computedStyle.backgroundColor || getComputedColor(element, 'background-color') || '#ffffff';
@@ -835,7 +883,6 @@ function editBlock(blockId) {
                 const currentFontWeight = computedStyle.fontWeight || window.getComputedStyle(element).fontWeight || 'normal';
                 const isBold = currentFontWeight === 'bold' || currentFontWeight === '700' || parseInt(currentFontWeight) >= 700;
                 
-                // Жирность текста
                 const boldContainer = document.createElement('div');
                 boldContainer.className = 'style-control-item';
                 const boldCheckbox = document.createElement('input');
@@ -851,7 +898,6 @@ function editBlock(blockId) {
                 boldContainer.appendChild(boldLabel);
                 stylesContainer.appendChild(boldContainer);
                 
-                // Размер шрифта
                 const fontSizeContainer = document.createElement('div');
                 fontSizeContainer.className = 'style-control-item';
                 const fontSizeLabel = document.createElement('label');
@@ -869,8 +915,7 @@ function editBlock(blockId) {
                 fontSizeContainer.appendChild(fontSizeLabel);
                 fontSizeContainer.appendChild(fontSizeInput);
                 stylesContainer.appendChild(fontSizeContainer);
-                
-                // Интерлиньяж
+            
                 const lineHeightContainer = document.createElement('div');
                 lineHeightContainer.className = 'style-control-item';
                 const lineHeightLabel = document.createElement('label');
@@ -888,7 +933,6 @@ function editBlock(blockId) {
                 lineHeightContainer.appendChild(lineHeightInput);
                 stylesContainer.appendChild(lineHeightContainer);
                 
-                // Цвет текста
                 const colorContainer = document.createElement('div');
                 colorContainer.className = 'style-control-item';
                 const colorLabel = document.createElement('label');
@@ -903,7 +947,6 @@ function editBlock(blockId) {
                 colorContainer.appendChild(colorInput);
                 stylesContainer.appendChild(colorContainer);
                 
-                // Цвет фона
                 const bgColorContainer = document.createElement('div');
                 bgColorContainer.className = 'style-control-item';
                 const bgColorLabel = document.createElement('label');
@@ -939,7 +982,6 @@ function editBlock(blockId) {
                 label.textContent = `Изображение ${index + 1}:`;
                 field.appendChild(label);
                 
-                // URL изображения
                 const input = document.createElement('input');
                 input.type = 'url';
                 input.value = element.getAttribute('src') || '';
@@ -948,7 +990,6 @@ function editBlock(blockId) {
                 input.placeholder = 'URL изображения или base64';
                 field.appendChild(input);
                 
-                // Кнопка загрузки файла
                 const uploadContainer = document.createElement('div');
                 uploadContainer.className = 'image-upload-container';
                 
@@ -975,77 +1016,80 @@ function editBlock(blockId) {
                 field.appendChild(uploadContainer);
             }
             
+            if (element.hasAttribute('data-editable-alt')) {
+                const label = document.createElement('label');
+                label.textContent = `Alt-текст ${index + 1}:`;
+                field.appendChild(label);
+            
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = element.getAttribute('alt') || '';
+                input.dataset.index = index;
+                input.dataset.type = 'alt';
+                field.appendChild(input);
+            }
+            
             editorContent.appendChild(field);
         });
+    }
         
-        // Добавляем кнопку сохранения
         const saveBtn = document.createElement('button');
         saveBtn.className = 'btn-primary';
         saveBtn.textContent = 'Сохранить изменения';
         saveBtn.style.marginTop = '20px';
         saveBtn.addEventListener('click', saveBlockEdits);
         editorContent.appendChild(saveBtn);
-    }
     
     editorPanel.classList.remove('hidden');
 }
 
 // Сохранение изменений блока
 function saveBlockEdits() {
-    const block = emailBlocks.find(b => b.id === currentEditingBlock);
+    const block = getCurrentContextBlock();
     if (!block) return;
     
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = block.html;
     
-    const editableElements = tempDiv.querySelectorAll('[data-editable], [data-editable-href], [data-editable-src]');
-    const inputs = document.querySelectorAll('#editorContent input, #editorContent textarea, #editorContent input[type="checkbox"]');
+    const editableElements = tempDiv.querySelectorAll('[data-editable], [data-editable-href], [data-editable-src], [data-editable-alt]');
+    const controls = document.querySelectorAll('#editorContent [data-index]');
     
-    inputs.forEach(input => {
-        const index = parseInt(input.dataset.index);
-        const type = input.dataset.type;
+    controls.forEach(control => {
+        const index = parseInt(control.dataset.index);
+        const type = control.dataset.type;
         const element = editableElements[index];
         
         if (!element) return;
         
         if (type === 'text') {
-            // Проверяем, это WYSIWYG редактор или обычный input
             const wysiwygEditor = document.getElementById(`wysiwyg-${index}`);
             if (wysiwygEditor) {
-                // Очищаем HTML от лишних div и нормализуем
                 const cleanedHTML = cleanWysiwygHTML(wysiwygEditor.innerHTML);
                 element.innerHTML = cleanedHTML;
-            } else if (input.value !== undefined) {
-                element.textContent = input.value;
             }
         } else if (type === 'href') {
-            element.setAttribute('href', input.value);
+            element.setAttribute('href', control.value);
         } else if (type === 'src') {
-            element.setAttribute('src', input.value);
+            element.setAttribute('src', control.value);
+        } else if (type === 'alt') {
+            element.setAttribute('alt', control.value);
         } else if (type === 'bold') {
-            // Применяем жирность
-            const currentStyle = element.getAttribute('style') || '';
-            if (input.checked) {
+            if (control.checked) {
                 element.style.fontWeight = 'bold';
             } else {
                 element.style.fontWeight = 'normal';
             }
         } else if (type === 'fontSize') {
-            // Применяем размер шрифта
-            element.style.fontSize = input.value + 'px';
+            element.style.fontSize = control.value + 'px';
         } else if (type === 'lineHeight') {
-            // Применяем интерлиньяж
-            element.style.lineHeight = input.value;
+            element.style.lineHeight = control.value;
         } else if (type === 'color') {
-            // Применяем цвет текста
-            element.style.color = input.value;
+            element.style.color = control.value;
         } else if (type === 'backgroundColor') {
-            // Применяем цвет фона
-            element.style.backgroundColor = input.value;
+            element.style.backgroundColor = control.value;
         }
     });
     
-    // Применяем фон блока
     const blockBgInput = document.getElementById('blockBackgroundColor');
     if (blockBgInput) {
         const mainTable = tempDiv.querySelector('table');
@@ -1055,9 +1099,18 @@ function saveBlockEdits() {
     }
     
     block.html = tempDiv.innerHTML;
+    
+    if (currentEditorContext?.type === 'email') {
     renderEmailCanvas();
+    } else if (currentEditorContext?.type === 'admin') {
+        saveBlocksToStorage();
+        renderAdminBlocks();
+        renderAvailableBlocks();
+        syncAdminFormWithBlock(block.id, block.html);
+    }
     
     document.querySelector('.editor-panel').classList.add('hidden');
+    resetEditorContext();
     alert('Изменения сохранены!');
 }
 
@@ -1129,7 +1182,7 @@ function showExport() {
 function generateFullEmailHTML() {
     const subject = document.getElementById('emailSubject').value || 'Без темы';
     const blocksHTML = emailBlocks.map(block => block.html).join('\n');
-
+    
     return `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -1149,10 +1202,10 @@ function generateFullEmailHTML() {
     </style>
 </head>
 <body bgcolor="#E1D9FF" style="margin: 0; padding: 0; background-color: #E1D9FF;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #E1D9FF;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
             <td align="center" style="padding: 0;">
-                ${blocksHTML}
+        ${blocksHTML}
             </td>
         </tr>
     </table>
@@ -1457,19 +1510,18 @@ function componentToHex(c) {
 
 // Переключение режима редактора
 let currentEditorMode = 'visual';
-let currentBlockHtml = '';
 
 function switchEditorMode(mode) {
     currentEditorMode = mode;
-    const block = emailBlocks.find(b => b.id === currentEditingBlock);
+    setEditorModeButtons(mode);
+
+    const block = getCurrentContextBlock();
     if (!block) return;
     
     if (mode === 'code') {
-        // Режим кода - показываем HTML
         showCodeEditor(block);
     } else {
-        // Визуальный режим - показываем контролы
-        editBlock(currentEditingBlock);
+        renderVisualBlockEditor(block);
     }
 }
 
@@ -1489,13 +1541,21 @@ function showCodeEditor(block) {
     saveBtn.textContent = 'Сохранить код';
     saveBtn.style.marginTop = '20px';
     saveBtn.addEventListener('click', function() {
-        const block = emailBlocks.find(b => b.id === currentEditingBlock);
-        if (block) {
-            block.html = textarea.value.trim();
+        const updatedHtml = textarea.value.trim();
+        block.html = updatedHtml;
+        
+        if (currentEditorContext?.type === 'email') {
             renderEmailCanvas();
-            document.querySelector('.editor-panel').classList.add('hidden');
-            alert('Код сохранен!');
+        } else if (currentEditorContext?.type === 'admin') {
+            saveBlocksToStorage();
+            renderAdminBlocks();
+            renderAvailableBlocks();
+            syncAdminFormWithBlock(block.id, updatedHtml);
         }
+        
+            document.querySelector('.editor-panel').classList.add('hidden');
+            resetEditorContext();
+            alert('Код сохранен!');
     });
     editorContent.appendChild(saveBtn);
 }
@@ -1595,5 +1655,36 @@ function handleImageUpload(event, index) {
         }
     };
     reader.readAsDataURL(file);
+}
+
+function syncAdminFormWithBlock(blockId, html) {
+    const modal = document.getElementById('editBlockModal');
+    if (modal && !modal.classList.contains('hidden') && modal.dataset.editingId === blockId) {
+        const nameInput = document.getElementById('blockName');
+        const htmlTextarea = document.getElementById('blockHTML');
+        const block = blocks.find(b => b.id === blockId);
+
+        if (block && nameInput) {
+            nameInput.value = block.name;
+        }
+        if (htmlTextarea) {
+            htmlTextarea.value = html;
+        }
+    }
+}
+
+function resetEditorContext() {
+    if (currentEditorContext?.type === 'admin' && userPanelForcedVisible) {
+        const userPanel = document.getElementById('userPanel');
+        if (userPanel) {
+            userPanel.classList.add('hidden');
+        }
+    }
+    userPanelForcedVisible = false;
+    currentEditorContext = null;
+    currentEditingBlock = null;
+    currentAdminEditingBlock = null;
+    currentEditorMode = 'visual';
+    setEditorModeButtons('visual');
 }
 
