@@ -574,7 +574,7 @@ header h1 {
 }
 
 .email-canvas {
-    background: white;
+    background: #E1D9FF;
     border: 2px dashed #e0e0e0;
     border-radius: 12px;
     padding: 20px;
@@ -592,10 +592,10 @@ header h1 {
 }
 
 .canvas-block {
-    background: white;
-    margin-bottom: 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
+    background: transparent;
+    margin-bottom: 20px;
+    border: 2px solid transparent;
+    border-radius: 12px;
     position: relative;
     transition: all 0.3s ease;
 }
@@ -606,7 +606,7 @@ header h1 {
 }
 
 .canvas-block-content {
-    padding: 15px;
+    padding: 0;
 }
 
 .canvas-block-controls {
