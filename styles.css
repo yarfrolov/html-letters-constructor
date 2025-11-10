@@ -903,6 +903,32 @@ header h1 {
 .wysiwyg-editor div {
     margin: 0 !important;
     padding: 0 !important;
+    display: block !important;
+}
+
+/* Убираем все отступы у всех элементов внутри редактора */
+.wysiwyg-editor * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Исключение для ссылок и форматирования - они должны быть inline */
+.wysiwyg-editor a,
+.wysiwyg-editor strong,
+.wysiwyg-editor b,
+.wysiwyg-editor em,
+.wysiwyg-editor i,
+.wysiwyg-editor u,
+.wysiwyg-editor span {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Кнопка загрузки изображения */

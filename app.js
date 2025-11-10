@@ -728,6 +728,34 @@ function editBlock(blockId) {
                 editableDiv.dataset.type = 'text';
                 editableDiv.id = `wysiwyg-${index}`;
                 
+                // Предотвращаем добавление inline стилей с отступами
+                editableDiv.addEventListener('input', function() {
+                    // Удаляем margin и padding из всех элементов
+                    const allElements = this.querySelectorAll('*');
+                    allElements.forEach(el => {
+                        if (el.style) {
+                            el.style.margin = '';
+                            el.style.padding = '';
+                            el.style.marginTop = '';
+                            el.style.marginBottom = '';
+                            el.style.paddingTop = '';
+                            el.style.paddingBottom = '';
+                            
+                            // Удаляем пустые style атрибуты
+                            if (!el.style.cssText || el.style.cssText.trim() === '') {
+                                el.removeAttribute('style');
+                            }
+                        }
+                    });
+                });
+                
+                // Обработка вставки текста
+                editableDiv.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                });
+                
                 wysiwygContainer.appendChild(editableDiv);
                 field.appendChild(wysiwygContainer);
                 
@@ -921,12 +949,7 @@ function saveBlockEdits() {
             const wysiwygEditor = document.getElementById(`wysiwyg-${index}`);
             if (wysiwygEditor) {
                 // Очищаем HTML от лишних div и нормализуем
-                const originalHTML = wysiwygEditor.innerHTML;
-                const cleanedHTML = cleanWysiwygHTML(originalHTML);
-                
-                console.log('Original HTML:', originalHTML);
-                console.log('Cleaned HTML:', cleanedHTML);
-                
+                const cleanedHTML = cleanWysiwygHTML(wysiwygEditor.innerHTML);
                 element.innerHTML = cleanedHTML;
             } else if (input.value !== undefined) {
                 element.textContent = input.value;
@@ -1128,51 +1151,91 @@ function cleanWysiwygHTML(html) {
     const temp = document.createElement('div');
     temp.innerHTML = html;
     
-    // Функция для обработки узлов
-    function processNode(node) {
-        // Если это DIV с содержимым, заменяем его содержимое + <br>
-        if (node.nodeName === 'DIV' && node.parentNode) {
-            // Создаем фрагмент для содержимого
+    // Удаляем все inline стили с margin и padding
+    temp.querySelectorAll('*').forEach(el => {
+        if (el.style) {
+            // Удаляем margin и padding из style
+            el.style.margin = '';
+            el.style.padding = '';
+            el.style.marginTop = '';
+            el.style.marginBottom = '';
+            el.style.paddingTop = '';
+            el.style.paddingBottom = '';
+            
+            // Если style пустой, удаляем атрибут
+            if (!el.style.cssText || el.style.cssText.trim() === '') {
+                el.removeAttribute('style');
+            }
+        }
+    });
+    
+    // Обрабатываем все div элементы - заменяем на содержимое + br
+    // Важно: обрабатываем в обратном порядке, чтобы не сломать индексы
+    const divs = Array.from(temp.querySelectorAll('div'));
+    // Обрабатываем с конца, чтобы индексы не сбивались
+    for (let i = divs.length - 1; i >= 0; i--) {
+        const div = divs[i];
+        const parent = div.parentNode;
+        if (!parent || parent === temp) {
+            // Если родитель - это temp, просто заменяем содержимое
+            const children = Array.from(div.childNodes);
             const fragment = document.createDocumentFragment();
             
-            // Добавляем <br> перед содержимым (если это не первый div)
-            if (node.previousSibling) {
+            // Добавляем <br> перед содержимым (если это не первый div в temp)
+            if (div.previousSibling) {
                 fragment.appendChild(document.createElement('br'));
             }
             
-            // Переносим все дочерние узлы
-            while (node.firstChild) {
-                fragment.appendChild(node.firstChild);
-            }
+            // Добавляем все дочерние узлы
+            children.forEach(child => fragment.appendChild(child));
             
             // Заменяем div на фрагмент
-            node.parentNode.replaceChild(fragment, node);
+            parent.replaceChild(fragment, div);
+        } else {
+            // Обычная замена
+            const children = Array.from(div.childNodes);
+            
+            // Добавляем <br> перед div (если это не первый элемент)
+            if (div.previousSibling) {
+                parent.insertBefore(document.createElement('br'), div);
+            }
+            
+            // Вставляем все дочерние узлы перед div
+            children.forEach(child => {
+                parent.insertBefore(child, div);
+            });
+            
+            // Удаляем div
+            div.remove();
         }
     }
-    
-    // Обрабатываем все div элементы
-    const divs = Array.from(temp.querySelectorAll('div'));
-    divs.forEach(processNode);
     
     // Убираем пустые элементы
     temp.querySelectorAll('span:empty, strong:empty, b:empty, i:empty, em:empty').forEach(el => el.remove());
     
     // Убираем лишние <br> в начале
-    while (temp.firstChild && temp.firstChild.nodeName === 'BR') {
+    while (temp.firstChild && (temp.firstChild.nodeName === 'BR' || 
+           (temp.firstChild.nodeType === 3 && temp.firstChild.textContent.trim() === ''))) {
         temp.removeChild(temp.firstChild);
     }
     
     // Получаем результат
     let result = temp.innerHTML;
     
+    // Убираем все inline стили с margin/padding через regex
+    result = result.replace(/\s*style="[^"]*margin[^"]*"/gi, '');
+    result = result.replace(/\s*style="[^"]*padding[^"]*"/gi, '');
+    result = result.replace(/\s*style="[^"]*webkit[^"]*"/gi, '');
+    
+    // Убираем пустые style атрибуты
+    result = result.replace(/\s*style="\s*"/gi, '');
+    
     // Убираем множественные <br> подряд (больше 2)
     result = result.replace(/(<br\s*\/?>[\s\n]*){3,}/gi, '<br><br>');
     
     // Убираем пустые параграфы
     result = result.replace(/<p>\s*<\/p>/gi, '');
-    
-    // Убираем webkit-специфичные стили
-    result = result.replace(/\s*style="[^"]*webkit[^"]*"/gi, '');
+    result = result.replace(/<p\s+[^>]*>\s*<\/p>/gi, '');
     
     return result.trim();
 }
