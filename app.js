@@ -1291,43 +1291,34 @@ function cleanWysiwygHTML(html) {
     // Обрабатываем все div элементы - заменяем на содержимое + br
     // Важно: обрабатываем в обратном порядке, чтобы не сломать индексы
     const divs = Array.from(temp.querySelectorAll('div'));
-    // Обрабатываем с конца, чтобы индексы не сбивались
-    for (let i = divs.length - 1; i >= 0; i--) {
-        const div = divs[i];
+    divs.forEach(div => {
         const parent = div.parentNode;
-        if (!parent || parent === temp) {
-            // Если родитель - это temp, просто заменяем содержимое
-            const children = Array.from(div.childNodes);
-            const fragment = document.createDocumentFragment();
-            
-            // Добавляем <br> перед содержимым (если это не первый div в temp)
-            if (div.previousSibling) {
-                fragment.appendChild(document.createElement('br'));
+        if (!parent) return;
+        
+        const getPrevContentSibling = node => {
+            let prev = node.previousSibling;
+            while (prev) {
+                if (prev.nodeType === Node.TEXT_NODE && prev.textContent.trim() === '') {
+                    prev = prev.previousSibling;
+                    continue;
+                }
+                return prev;
             }
-            
-            // Добавляем все дочерние узлы
-            children.forEach(child => fragment.appendChild(child));
-            
-            // Заменяем div на фрагмент
-            parent.replaceChild(fragment, div);
-        } else {
-            // Обычная замена
-            const children = Array.from(div.childNodes);
-            
-            // Добавляем <br> перед div (если это не первый элемент)
-            if (div.previousSibling) {
-                parent.insertBefore(document.createElement('br'), div);
-            }
-            
-            // Вставляем все дочерние узлы перед div
-            children.forEach(child => {
-                parent.insertBefore(child, div);
-            });
-            
-            // Удаляем div
-            div.remove();
+            return null;
+        };
+
+        const prevContent = getPrevContentSibling(div);
+        if (prevContent && prevContent.nodeName !== 'BR') {
+            parent.insertBefore(document.createElement('br'), div);
         }
-    }
+        
+        const children = Array.from(div.childNodes);
+        children.forEach(child => {
+            parent.insertBefore(child, div);
+        });
+        
+        div.remove();
+    });
     
     // Убираем пустые элементы
     temp.querySelectorAll('span:empty, strong:empty, b:empty, i:empty, em:empty').forEach(el => el.remove());
