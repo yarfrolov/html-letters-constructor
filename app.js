@@ -925,9 +925,26 @@ function renderVisualBlockEditor(block) {
                 lineHeightInput.min = '0.5';
                 lineHeightInput.max = '3';
                 lineHeightInput.step = '0.1';
-                lineHeightInput.value = parseFloat(currentLineHeight) || 1.5;
+                let currentLineHeight = computedStyle.lineHeight || getComputedStyle(element, 'line-height') || '1.5';
+                if (currentLineHeight === 'normal') {
+                    currentLineHeight = '1.5';
+                }
+                const trimmedLineHeight = typeof currentLineHeight === 'string' ? currentLineHeight.trim() : String(currentLineHeight);
+                let lineHeightUnit = '';
+                if (trimmedLineHeight.endsWith('%')) {
+                    lineHeightUnit = '%';
+                } else if (trimmedLineHeight.endsWith('px')) {
+                    lineHeightUnit = 'px';
+                }
+                const parsedLineHeight = parseFloat(trimmedLineHeight);
+                lineHeightInput.value = !isNaN(parsedLineHeight) ? parsedLineHeight : 1.5;
                 lineHeightInput.dataset.index = index;
                 lineHeightInput.dataset.type = 'lineHeight';
+                if (lineHeightUnit) {
+                    lineHeightInput.dataset.unit = lineHeightUnit;
+                } else {
+                    delete lineHeightInput.dataset.unit;
+                }
                 lineHeightInput.className = 'small-input';
                 lineHeightContainer.appendChild(lineHeightLabel);
                 lineHeightContainer.appendChild(lineHeightInput);
@@ -1082,7 +1099,9 @@ function saveBlockEdits() {
         } else if (type === 'fontSize') {
             element.style.fontSize = control.value + 'px';
         } else if (type === 'lineHeight') {
-            element.style.lineHeight = control.value;
+            const unit = control.dataset.unit || '';
+            const value = control.value;
+            element.style.lineHeight = unit ? `${value}${unit}` : value;
         } else if (type === 'color') {
             element.style.color = control.value;
         } else if (type === 'backgroundColor') {
@@ -1436,9 +1455,14 @@ function handleBlockHTMLTab(e) {
 // Получение вычисленного цвета элемента
 function getComputedColor(element, property) {
     try {
-        const color = element.style[property];
-        if (color) return color;
-        return '';
+        if (!element) return '';
+        if (element.style && element.style[property]) {
+            return element.style[property];
+        }
+        const computed = window.getComputedStyle(element);
+        if (!computed) return '';
+        const value = computed.getPropertyValue(property) || computed[property];
+        return value ? value.trim() : '';
     } catch (e) {
         return '';
     }
@@ -1447,9 +1471,14 @@ function getComputedColor(element, property) {
 // Получение вычисленного стиля элемента
 function getComputedStyle(element, property) {
     try {
-        const style = element.style[property];
-        if (style) return style;
-        return '';
+        if (!element) return '';
+        if (element.style && element.style[property]) {
+            return element.style[property];
+        }
+        const computed = window.getComputedStyle(element);
+        if (!computed) return '';
+        const value = computed.getPropertyValue(property) || computed[property];
+        return value ? value.trim() : '';
     } catch (e) {
         return '';
     }
