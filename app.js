@@ -11,6 +11,9 @@ const PASSWORDS = {
     user: 'user-m2'
 };
 
+// Версия дефолтных блоков
+const BLOCKS_VERSION = '2025-11-10-welcome-urls';
+
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
     checkAuthentication();
@@ -22,118 +25,67 @@ document.addEventListener('DOMContentLoaded', function() {
 // Загрузка блоков из localStorage
 function loadBlocksFromStorage() {
     const savedBlocks = localStorage.getItem('emailBlocks');
-    if (savedBlocks) {
+    const savedVersion = localStorage.getItem('emailBlocksVersion');
+
+    if (savedBlocks && savedVersion === BLOCKS_VERSION) {
         try {
-            blocks = JSON.parse(savedBlocks);
-            // Если массив пустой или поврежден, загружаем по умолчанию
-            if (!Array.isArray(blocks) || blocks.length === 0) {
-                loadDefaultBlocks();
+            const parsed = JSON.parse(savedBlocks);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                blocks = parsed;
+                return;
             }
         } catch (e) {
             console.error('Ошибка загрузки блоков:', e);
-            loadDefaultBlocks();
         }
-    } else {
-        loadDefaultBlocks();
     }
+
+    loadDefaultBlocks();
 }
 
 // Загрузка блоков по умолчанию
 function loadDefaultBlocks() {
-        // Примеры блоков по умолчанию
-        blocks = [
+        blocks = getWelcomeLetterBlocks();
+        saveBlocksToStorage();
+}
+
+function getWelcomeLetterBlocks() {
+        return [
             {
                 id: generateId(),
-                name: 'Заголовок',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><tr><td style="padding: 40px 20px; text-align: center;"><h1 style="font-size: 24px; margin: 0 0 1.25rem 0; font-weight: 600; color: white;" data-editable="text">Привет!</h1></td></tr></table>'
+                name: 'М2: Обложка с изображением',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #E1D9FF;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 600px; background: #ffffff; border-radius: 4px 4px 0 0;"><tbody><tr><td><img src="https://cdn.m2.ru/assets/file-upload-server/eaf2ec70a17447646eba32d7d60c5fa0.png" alt="main-image" width="100%" height="auto" style="display: block; width: 100%; height: auto; border-radius: 4px 4px 0 0;" data-editable-src="src" data-editable-alt="alt" /></td></tr></tbody></table></td></tr></table>'
             },
             {
                 id: generateId(),
-                name: 'Подзаголовок',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td style="padding: 20px 20px 30px 20px; text-align: center;"><h2 style="margin: 0; font-size: 24px; font-weight: 600; color: #667eea;" data-editable="text">Ваш успех начинается здесь</h2><p style="margin: 10px 0 0 0; font-size: 14px; color: #999; font-style: italic;" data-editable="text">Присоединяйтесь к тысячам довольных пользователей</p></td></tr></table>'
+                name: 'М2: Приветствие',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #E1D9FF;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 600px; background: #ffffff;"><tbody><tr><td style="padding: 32px 20px 24px 20px; text-align: left;"><h1 style="font-size: 28px; margin: 0; font-weight: 600;" data-editable="text">Привет<strong style="color:#5F37EB"> Username,</strong></h1><p style="line-height: 140%; margin: 20px 0 0 0; font-size: 20px;" data-editable="text">С&nbsp;сегодняшнего дня ты&nbsp;— часть команды М2. Ура!</p></td></tr></tbody></table></td></tr></table>'
             },
             {
                 id: generateId(),
-                name: 'Текстовый блок',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td style="padding: 30px 20px;"><p style="line-height: 140%; margin: 0 0 1rem 0;" data-editable="text">Поздравляем с успешным прохождением испытательного срока!</p></td></tr></table>'
+                name: 'М2: Заголовок с таймлайном',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #E1D9FF;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 600px; background: #ffffff;"><tbody><tr><td style="padding: 0 20px 32px 20px; text-align: left;"><h2 style="font-size: 22px; margin: 0 0 20px 0; font-weight: 600;" data-editable="text">Что тебя ждёт в&nbsp;ближайшие три&nbsp;месяца</h2><img src="https://cdn.m2.ru/assets/file-upload-server/a9725695bc0e05f53e8545b4224cf647.png" alt="timeline" width="100%" height="auto" style="display: block; width: 100%; height: auto;" data-editable-src="src" data-editable-alt="alt" /></td></tr></tbody></table></td></tr></table>'
             },
             {
                 id: generateId(),
-                name: 'Кнопка',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f8f9fa;"><tr><td style="padding: 30px 20px; text-align: center;"><a href="https://example.com" style="display: inline-block; padding: 15px 40px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;" data-editable="text" data-editable-href="href">Нажми меня</a></td></tr></table>'
+                name: 'М2: План адаптации',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #E1D9FF;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 600px; background: #ffffff;"><tbody><tr><td style="padding: 0 20px 32px 20px; text-align: left;"><p style="padding: 0 0 4px 0; font-size: 20px;" data-editable="text"><strong style="color: #5F37EB;">В первый день</strong> ты подпишешь трудовой договор, получишь оборудование, почтовый аккаунт, личную страницу на портале, необходимые доступы и станешь участником рабочих чатов</p><p style="padding: 0 0 4px 0; font-size: 20px;" data-editable="text"><strong style="color: #5F37EB;">В течение первой недели</strong> познакомишься с командой и получишь задачи на испытательный срок от руководителя. А коллеги из команды обучения пришлют тебе приглашение в календарь на welcome-встречу, где ты узнаешь ещё больше о М2.</p><p style="padding: 0 0 4px 0; font-size: 20px;" data-editable="text"><strong style="color: #5F37EB;">Через две-три недели состоятся две встречи 1:1.</strong><br>Первая — с твоим HR, на которой вы обсудите первые дни в команде. Вторая — с руководителем, чтобы уточнить и закрепить задачи на испытательный срок.</p><p style="padding: 0 0 4px 0; font-size: 20px;" data-editable="text"><strong style="color: #5F37EB;">Через полтора месяца</strong> тебя ждёт ещё одна встреча с HR. Нам важно понимать, всё ли хорошо, как проходит адаптация и продвигается работа, нужна ли помощь или поддержка.</p><p style="font-size: 20px;" data-editable="text"><strong style="color: #5F37EB;">Через три месяца</strong> мы организуем итоговую встречу с HR и руководителем. На ней обсудим первые месяцы работы и результаты испытательного срока.</p></td></tr></tbody></table></td></tr></table>'
             },
             {
                 id: generateId(),
-                name: 'Изображение',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td style="padding: 20px; text-align: center;"><img src="https://via.placeholder.com/600x300" alt="Изображение" style="max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto;" data-editable-src="src" /></td></tr></table>'
+                name: 'М2: Важные шаги и иллюстрация',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #E1D9FF;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 600px; background: #ffffff;"><tbody><tr><td style="padding: 0 20px 32px 20px; text-align: left;"><h2 style="font-size: 22px; margin: 0 0 20px 0; font-weight: 600;" data-editable="text">Что ещё важно сделать?</h2><img src="https://cdn.m2.ru/assets/file-upload-server/bc24a66002cdbefd7d9a8de45aa9cff8.png" alt="plans" width="100%" height="auto" style="display: block; width: 100%; height: auto;" data-editable-src="src" data-editable-alt="alt" /><p style="padding-bottom:4px; font-size: 20px; margin: 24px 0 0 0;" data-editable="text"><strong style="color: #5F37EB;">Перейди на портал</strong><br>Для входа используй данные от&nbsp;почтового аккаунта. Обрати внимание, портал доступен только из&nbsp;внутренней сети.</p><p style="font-size: 20px;" data-editable="text"><strong style="color: #5F37EB;">Изучи <a href="https://portal.m2.ru/university/learning/course.php?COURSE_ID=33&INDEX=Y" style="color: #5F37EB;" data-editable-href="href">курс по адаптации «Лёгкий старт»</a></strong><br>В&nbsp;нём много полезной информации о&nbsp;М2, наших процессах, зарплатном проекте и других важных особенностях работы в компании. Если у тебя остались какие-то вопросы, смело задавай их своему HR или руководителю. Они обязательно ответят или направят тебя к тому, кто сможет помочь.</p><p style="font-size: 20px;" data-editable="text">Рады, что ты с нами, желаем отличного старта!<br><strong>Добро пожаловать в М2</strong></p></td></tr></tbody></table></td></tr></table>'
             },
             {
                 id: generateId(),
-                name: 'Две колонки',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td style="padding: 30px 20px;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td width="48%" style="padding: 15px; background: #f8f9fa; vertical-align: top;"><h3 style="margin: 0 0 10px 0; color: #333; font-size: 20px;" data-editable="text">Левая колонка</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;" data-editable="text">Текст левой колонки</p></td><td width="4%"></td><td width="48%" style="padding: 15px; background: #f8f9fa; vertical-align: top;"><h3 style="margin: 0 0 10px 0; color: #333; font-size: 20px;" data-editable="text">Правая колонка</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;" data-editable="text">Текст правой колонки</p></td></tr></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'Футер',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #2c3e50;"><tr><td style="padding: 30px 20px; text-align: center;"><p style="margin: 0 0 10px 0; font-size: 14px; color: white;" data-editable="text">© 2025 Ваша Компания. Все права защищены.</p><p style="margin: 0; font-size: 12px; color: #95a5a6;" data-editable="text">Email: info@example.com | Телефон: +7 (123) 456-78-90</p></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Приветственный заголовок',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><h1 style="font-size: 28px; margin-bottom: 0px; margin-top: 0px; padding-top: 0px; font-weight: 600;" data-editable="text">Привет<strong style="color:#5F37EB"> Username,</strong></h1><p style="line-height: 140%; margin-bottom: 20px; margin-block-start: 0.25rem;" data-editable="text">С сегодняшнего дня ты — часть команды М2. Ура!</p></td></tr></tbody></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Заголовок с хронологией',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><h2 style="font-size: 22px; margin-bottom: 1.25rem; font-weight: 600;" data-editable="text">Что тебя ждёт в ближайшие три месяца</h2></td></tr></tbody></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Текстовый блок адаптации',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><p style="padding: 0px 0px 4px 0px;" data-editable="text"><strong style="color: #5F37EB;">В первый день</strong> ты подпишешь трудовой договор, получишь оборудование, почтовый аккаунт, личную страницу на портале, необходимые доступы и станешь участником рабочих чатов</p><p style="padding: 0px 0px 4px 0px;" data-editable="text"><strong style="color: #5F37EB;">В течение первой недели</strong> познакомишься с командой и получишь задачи на испытательный срок от руководителя. А коллеги из команды обучения пришлют тебе приглашение в календарь на welcome-встречу, где ты узнаешь ещё больше о М2.</p></td></tr></tbody></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Основной контент',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><h2 style="font-size: 22px; margin-bottom: 1.25rem; font-weight: 600;" data-editable="text">Что ещё важно сделать?</h2></td></tr><tr><td><p style="padding-bottom:4px;" data-editable="text"><strong style="color: #5F37EB;">Перейди на портал</strong><br>Для входа используй данные от почтового аккаунта. Обрати внимание, портал доступен только из внутренней сети.</p><p data-editable="text"><strong style="color: #5F37EB;">Изучи <a href="https://portal.m2.ru/university/learning/course.php?COURSE_ID=33&INDEX=Y" style="color: #5F37EB;" data-editable-href="href"> курс по адаптации «Лёгкий старт»</a></strong><br>В нём много полезной информации о М2, наших процессах, зарплатном проекте и других важных особенностях работы в компании. Если у тебя остались какие-то вопросы, смело задавай их своему HR или руководителю. Они обязательно ответят или направят тебя к тому, кто сможет помочь.</p></td></tr></tbody></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Подпись HR',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><p data-editable="text">Рады, что ты с нами, желаем отличного старта!<br><strong>Добро пожаловать в М2</strong></p><p style="padding-top: 16px;" data-editable="text">Твоя команда HR</p></td></tr></tbody></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Фиолетовая кнопка',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td style="padding: 30px 20px; text-align: center;"><a href="https://portal.m2.ru" style="display: inline-block; padding: 12px 25px; background: #5F37EB; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 20px; border: solid 1px #9173FA; box-sizing: border-box;" data-editable="text" data-editable-href="href">Перейти на портал</a></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Заголовок с Timeline',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><h2 style="font-size: 22px; margin-bottom: 1.25rem; font-weight: 600;" data-editable="text">Что тебя ждёт в ближайшие три месяца</h2><img src="https://via.placeholder.com/600x200" alt="Timeline" style="max-width: 100%; height: auto; display: block;" data-editable-src="src" /></td></tr></tbody></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Расширенный текст с пунктами',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><p style="padding: 0px 0px 4px 0px;" data-editable="text"><strong style="color: #5F37EB;">В первый день</strong> ты подпишешь трудовой договор, получишь оборудование, почтовый аккаунт, личную страницу на портале, необходимые доступы и станешь участником рабочих чатов</p><p style="padding: 0px 0px 4px 0px;" data-editable="text"><strong style="color: #5F37EB;">В течение первой недели</strong> познакомишься с командой и получишь задачи на испытательный срок от руководителя. А коллеги из команды обучения пришлют тебе приглашение в календарь на welcome-встречу, где ты узнаешь ещё больше о М2.</p><p style="padding: 0px 0px 4px 0px;" data-editable="text"><strong style="color: #5F37EB;">Через две-три недели состоятся две встречи 1:1.</strong><br>Первая — с твоим HR, на которой вы обсудите первые дни в команде. Вторая — с руководителем, чтобы уточнить и закрепить задачи на испытательный срок.</p></td></tr></tbody></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Контент с иллюстрацией',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td><h2 style="font-size: 22px; margin-bottom: 1.25rem; font-weight: 600;" data-editable="text">Что ещё важно сделать?</h2></td></tr><tr><td><img src="https://via.placeholder.com/600x300" alt="Иллюстрация" style="max-width: 100%; height: auto; display: block;" data-editable-src="src" /></td></tr><tr><td><p style="padding-bottom:4px;" data-editable="text"><strong style="color: #5F37EB;">Перейди на портал</strong><br>Для входа используй данные от почтового аккаунта. Обрати внимание, портал доступен только из внутренней сети.</p></td></tr></tbody></table></td></tr></table>'
-            },
-            {
-                id: generateId(),
-                name: 'М2: Блок с ботом (2 колонки)',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td style="width:148px;"><p style="font-size: 14px; padding-top: 16px;" data-editable="text">Регистрируйся в боте <a href="#" style="color: #000;"><strong>"Random Drink M2"</strong></a> для знакомств с коллегами!</p></td><td><img src="https://via.placeholder.com/240x240" alt="QR Code" width="240" height="240" style="display: block; width: 240px; height: 240px;" data-editable-src="src" /></td></tr></tbody></table></td></tr></table>'
+                name: 'М2: Бот Random Drink',
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #E1D9FF;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 600px; background: #ffffff;"><tbody><tr><td style="padding: 0 20px 32px 20px;"><table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tbody><tr><td style="width: 148px; vertical-align: top; padding-right: 20px;"><p style="font-size: 14px; padding-top: 16px;" data-editable="text">Регистрируйся в&nbsp;боте <a href="https://mm.m2.ru/m2/pl/wk6x5nj1oigh5j74mfh4ah4osw" style="color: #000;" data-editable-href="href"><strong>«Random Drink M2»</strong></a> для&nbsp;знакомств с&nbsp;коллегами!</p></td><td style="vertical-align: top; text-align: right;"><img src="https://cdn.m2.ru/assets/file-upload-server/2e095e6e720819d96aacaaf0b63fa85f.png" alt="random-drink-m2" width="240" height="auto" style="display: block; width: 240px; height: auto; margin-left: auto;" data-editable-src="src" data-editable-alt="alt" /></td></tr></tbody></table></td></tr></tbody></table></td></tr></table>'
             },
             {
                 id: generateId(),
                 name: 'М2: Подпись HR с иконкой',
-                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff;"><tr><td align="center" style="padding: 0 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 520px"><tbody><tr><td style="padding-bottom: 4px; width: 172px;"><p data-editable="text">Твоя команда HR</p></td><td style="padding-bottom: 4px;"><img src="https://via.placeholder.com/24x24" alt="heart" width="24" height="24" style="display: block; width: 24px; height: 24px;" data-editable-src="src" /></td></tr></tbody></table></td></tr></table>'
+                html: '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #E1D9FF;"><tr><td align="center" style="padding: 0 20px 40px 20px"><table cellspacing="0" cellpadding="0" width="100%" role="presentation" style="max-width: 600px; background: #ffffff; border-radius: 0 0 4px 4px;"><tbody><tr><td style="padding: 24px 20px;"><table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tbody><tr><td style="padding-bottom: 4px; width: 172px;"><p style="font-size: 20px;" data-editable="text">Твоя команда HR</p></td><td style="padding-bottom: 4px; text-align: right;"><img src="https://cdn.m2.ru/assets/file-upload-server/f75c273fe671c1ccf779f203d4f009a5.png" alt="heart" width="24" height="24" style="display: inline-block; width: 24px; height: 24px;" data-editable-src="src" data-editable-alt="alt" /></td></tr></tbody></table></td></tr></tbody></table></td></tr></table>'
             }
         ];
-        saveBlocksToStorage();
 }
 
 // Сброс блоков к значениям по умолчанию
