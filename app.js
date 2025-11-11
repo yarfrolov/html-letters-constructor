@@ -4,25 +4,16 @@ let emailBlocks = [];
 let currentEditingBlock = null;
 let currentAdminEditingBlock = null;
 let currentEditorContext = null;
-let userPanelForcedVisible = false;
-let currentRole = null;
-let selectedRole = 'user';
-
-// Пароли
-const PASSWORDS = {
-    admin: 'admin-m2',
-    user: 'user-m2'
-};
 
 // Версия дефолтных блоков
 const BLOCKS_VERSION = '2025-11-10-welcome-urls-v2';
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
-    checkAuthentication();
     loadBlocksFromStorage();
     initializeEventListeners();
-    initializeLoginListeners();
+    renderAvailableBlocks();
+    renderAdminBlocks();
 });
 
 // Загрузка блоков из localStorage
@@ -316,141 +307,9 @@ function generateId() {
     return 'block_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// Проверка авторизации
-function checkAuthentication() {
-    const auth = sessionStorage.getItem('auth');
-    if (auth) {
-        currentRole = auth;
-        showMainApp();
-    } else {
-        showLoginScreen();
-    }
-}
-
-// Показать экран входа
-function showLoginScreen() {
-    document.getElementById('loginScreen').classList.remove('hidden');
-    document.getElementById('mainApp').classList.add('hidden');
-}
-
-// Показать главное приложение
-function showMainApp() {
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('mainApp').classList.remove('hidden');
-    
-    // Настроить интерфейс в зависимости от роли
-    if (currentRole === 'admin') {
-        document.getElementById('adminPanel').classList.remove('hidden');
-        document.getElementById('userPanel').classList.add('hidden');
-        document.getElementById('adminMode').classList.add('active');
-        document.getElementById('userMode').classList.remove('active');
-    } else {
-        document.getElementById('adminPanel').classList.add('hidden');
-        document.getElementById('userPanel').classList.remove('hidden');
-        document.getElementById('adminMode').classList.remove('active');
-        document.getElementById('userMode').classList.add('active');
-        
-        // Скрыть кнопку администратора для обычных пользователей
-        document.getElementById('adminMode').style.display = 'none';
-    }
-    
-    renderAvailableBlocks();
-    renderAdminBlocks();
-}
-
-// Инициализация обработчиков для экрана входа
-function initializeLoginListeners() {
-    // Выбор роли
-    const roleButtons = document.querySelectorAll('.role-btn');
-    roleButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            roleButtons.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            selectedRole = this.dataset.role;
-            document.getElementById('loginError').classList.add('hidden');
-        });
-    });
-    
-    // Вход по кнопке
-    document.getElementById('loginBtn').addEventListener('click', handleLogin);
-    
-    // Вход по Enter
-    document.getElementById('passwordInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            handleLogin();
-        }
-    });
-}
-
-// Обработка входа
-function handleLogin() {
-    const password = document.getElementById('passwordInput').value;
-    const errorElement = document.getElementById('loginError');
-    
-    if (password === PASSWORDS[selectedRole]) {
-        // Успешная авторизация
-        currentRole = selectedRole;
-        sessionStorage.setItem('auth', currentRole);
-        document.getElementById('passwordInput').value = '';
-        errorElement.classList.add('hidden');
-        showMainApp();
-    } else {
-        // Неверный пароль
-        errorElement.classList.remove('hidden');
-        document.getElementById('passwordInput').value = '';
-        document.getElementById('passwordInput').focus();
-    }
-}
-
-// Выход из системы
-function handleLogout() {
-    if (confirm('Вы уверены, что хотите выйти?')) {
-        sessionStorage.removeItem('auth');
-        currentRole = null;
-        selectedRole = 'user';
-        emailBlocks = [];
-        showLoginScreen();
-        
-        // Сброс формы входа
-        document.querySelectorAll('.role-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.role === 'user') {
-                btn.classList.add('active');
-            }
-        });
-        document.getElementById('passwordInput').value = '';
-        document.getElementById('loginError').classList.add('hidden');
-        
-        // Показать кнопку администратора обратно
-        document.getElementById('adminMode').style.display = '';
-    }
-}
-
 // Инициализация обработчиков событий
 function initializeEventListeners() {
-    // Переключение режимов
-    document.getElementById('adminMode').addEventListener('click', function() {
-        if (currentRole !== 'admin') {
-            alert('Доступ запрещен. Требуются права администратора.');
-            return;
-        }
-        document.getElementById('adminPanel').classList.remove('hidden');
-        document.getElementById('userPanel').classList.add('hidden');
-        this.classList.add('active');
-        document.getElementById('userMode').classList.remove('active');
-    });
-
-    document.getElementById('userMode').addEventListener('click', function() {
-        document.getElementById('adminPanel').classList.add('hidden');
-        document.getElementById('userPanel').classList.remove('hidden');
-        this.classList.add('active');
-        document.getElementById('adminMode').classList.remove('active');
-    });
-    
-    // Выход из системы
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-
-    // Админ панель
+    // Управление блоками
     document.getElementById('addBlock').addEventListener('click', addNewBlock);
 
     // Панель пользователя
@@ -543,28 +402,8 @@ function deleteBlock(blockId) {
 
 // Отображение блоков в админ панели
 function renderAdminBlocks() {
-    const container = document.getElementById('adminBlocksList');
-    container.innerHTML = '';
-
-    if (blocks.length === 0) {
-        container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Нет добавленных блоков</p>';
-        return;
-    }
-
-    blocks.forEach(block => {
-        const blockElement = document.createElement('div');
-        blockElement.className = 'admin-block-item';
-        blockElement.innerHTML = `
-            <h4>${escapeHtml(block.name)}</h4>
-            <pre>${escapeHtml(block.html)}</pre>
-            <div class="admin-block-actions">
-                <button onclick="editAdminBlock('${block.id}')" class="btn-edit-admin">Редактировать</button>
-                <button onclick="editAdminBlockVisual('${block.id}')" class="btn-visual-admin">Визуально</button>
-                <button onclick="deleteBlock('${block.id}')" class="btn-delete-admin">Удалить</button>
-            </div>
-        `;
-        container.appendChild(blockElement);
-    });
+    // Теперь блоки отображаются через renderAvailableBlocks
+    renderAvailableBlocks();
 }
 
 // Редактирование блока администратором
@@ -582,7 +421,6 @@ function editAdminBlock(blockId) {
     modal.dataset.editingId = blockId;
     
     // Обновляем UI
-    document.getElementById('adminFormTitle').textContent = 'Редактировать блок';
     document.getElementById('editingIndicator').classList.remove('hidden');
     document.getElementById('addBlock').textContent = 'Сохранить изменения';
     
@@ -632,7 +470,6 @@ function cancelEditBlock() {
     document.getElementById('blockHTML').value = '';
     
     // Восстанавливаем UI
-    document.getElementById('adminFormTitle').textContent = 'Добавить новый блок';
     document.getElementById('editingIndicator').classList.add('hidden');
     document.getElementById('addBlock').textContent = 'Добавить блок';
 }
@@ -667,6 +504,43 @@ function renderAvailableBlocks() {
         addButton.className = 'block-add-overlay';
         addButton.innerHTML = '<span>+ Добавить</span>';
         blockElement.appendChild(addButton);
+        
+        // Кнопки управления блоком
+        const controls = document.createElement('div');
+        controls.className = 'block-item-controls';
+        controls.style.cssText = 'display: flex; gap: 5px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e0e0;';
+        
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '✏️';
+        editBtn.className = 'btn-edit-admin';
+        editBtn.style.cssText = 'padding: 4px 8px; font-size: 12px;';
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editAdminBlock(block.id);
+        };
+        controls.appendChild(editBtn);
+        
+        const visualBtn = document.createElement('button');
+        visualBtn.textContent = '👁️';
+        visualBtn.className = 'btn-visual-admin';
+        visualBtn.style.cssText = 'padding: 4px 8px; font-size: 12px;';
+        visualBtn.onclick = (e) => {
+            e.stopPropagation();
+            editAdminBlockVisual(block.id);
+        };
+        controls.appendChild(visualBtn);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.className = 'btn-delete-admin';
+        deleteBtn.style.cssText = 'padding: 4px 8px; font-size: 12px;';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteBlock(block.id);
+        };
+        controls.appendChild(deleteBtn);
+        
+        blockElement.appendChild(controls);
         
         blockElement.addEventListener('click', () => addBlockToEmail(block));
         container.appendChild(blockElement);
@@ -730,12 +604,6 @@ function editBlock(blockId) {
 function editAdminBlockVisual(blockId) {
     const block = blocks.find(b => b.id === blockId);
     if (!block) return;
-
-    const userPanel = document.getElementById('userPanel');
-    if (userPanel && userPanel.classList.contains('hidden')) {
-        userPanel.classList.remove('hidden');
-        userPanelForcedVisible = true;
-    }
 
     currentAdminEditingBlock = blockId;
     currentEditingBlock = null;
@@ -1694,13 +1562,6 @@ function syncAdminFormWithBlock(blockId, html) {
 }
 
 function resetEditorContext() {
-    if (currentEditorContext?.type === 'admin' && userPanelForcedVisible) {
-        const userPanel = document.getElementById('userPanel');
-        if (userPanel) {
-            userPanel.classList.add('hidden');
-        }
-    }
-    userPanelForcedVisible = false;
     currentEditorContext = null;
     currentEditingBlock = null;
     currentAdminEditingBlock = null;

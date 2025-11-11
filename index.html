@@ -7,85 +7,40 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Экран входа -->
-    <div id="loginScreen" class="login-screen">
-        <div class="login-container">
-            <h1>🔐 Вход в систему</h1>
-            <p class="login-subtitle">Выберите роль и введите пароль</p>
-            
-            <div class="role-selector">
-                <button class="role-btn active" data-role="user">
-                    <span class="role-icon">👤</span>
-                    <span class="role-name">Пользователь</span>
-                </button>
-                <button class="role-btn" data-role="admin">
-                    <span class="role-icon">👨‍💼</span>
-                    <span class="role-name">Администратор</span>
-                </button>
-            </div>
-            
-            <div class="login-form">
-                <input type="password" id="passwordInput" placeholder="Введите пароль" />
-                <button id="loginBtn" class="btn-primary">Войти</button>
-                <p class="login-error hidden" id="loginError">Неверный пароль</p>
-            </div>
-            
-            <div class="login-hint">
-                <p>💡 Подсказка:</p>
-                <p>Пользователь: <code>user-m2</code></p>
-                <p>Администратор: <code>admin-m2</code></p>
-            </div>
-        </div>
-    </div>
-
-    <div class="container hidden" id="mainApp">
+    <div class="container" id="mainApp">
         <header>
             <h1>📧 Конструктор HTML писем</h1>
-            <div class="mode-switcher">
-                <button id="adminMode" class="mode-btn">Режим администратора</button>
-                <button id="userMode" class="mode-btn active">Режим пользователя</button>
-                <button id="logoutBtn" class="mode-btn logout-btn">🚪 Выход</button>
-            </div>
         </header>
 
-        <!-- Режим администратора -->
-        <div id="adminPanel" class="panel hidden">
-            <h2>Панель администратора</h2>
-            <div class="admin-section">
-                <div class="upload-area">
-                    <h3 id="adminFormTitle">Добавить новый блок</h3>
-                    <div id="editingIndicator" class="editing-indicator hidden">
-                        <span>✏️ Режим редактирования</span>
-                        <button onclick="cancelEditBlock()" class="btn-cancel-edit">Отменить</button>
-                    </div>
-                    <input type="text" id="blockName" placeholder="Название блока (например, Заголовок)">
-                    <div class="code-editor-container">
-                        <textarea id="blockHTML" placeholder="Вставьте HTML код блока..." spellcheck="false"></textarea>
-                    </div>
-                    <button id="addBlock" class="btn-primary">Добавить блок</button>
-                </div>
-                <div class="blocks-library">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="margin: 0;">Библиотека блоков</h3>
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="exportBlocks()" class="btn-export" title="Экспортировать блоки в файл">💾 Экспорт</button>
-                            <button onclick="document.getElementById('importBlocksInput').click()" class="btn-import" title="Импортировать блоки из файла">📁 Импорт</button>
-                            <button onclick="resetToDefaultBlocks()" class="btn-reset" title="Восстановить блоки по умолчанию">🔄 Сбросить</button>
-                        </div>
-                    </div>
-                    <input type="file" id="importBlocksInput" accept=".json" style="display: none;" onchange="importBlocks(event)">
-                    <div id="adminBlocksList"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Режим пользователя -->
-        <div id="userPanel" class="panel">
+        <!-- Основной интерфейс -->
+        <div class="panel">
             <div class="workspace">
                 <!-- Левая панель - библиотека блоков -->
                 <div class="sidebar">
-                    <h3>Доступные блоки</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">Доступные блоки</h3>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="exportBlocks()" class="btn-export" title="Экспортировать блоки в файл" style="padding: 6px 10px; font-size: 12px;">💾</button>
+                            <button onclick="document.getElementById('importBlocksInput').click()" class="btn-import" title="Импортировать блоки из файла" style="padding: 6px 10px; font-size: 12px;">📁</button>
+                            <button onclick="resetToDefaultBlocks()" class="btn-reset" title="Восстановить блоки по умолчанию" style="padding: 6px 10px; font-size: 12px;">🔄</button>
+                        </div>
+                    </div>
+                    <input type="file" id="importBlocksInput" accept=".json" style="display: none;" onchange="importBlocks(event)">
                     <div id="availableBlocks" class="blocks-list"></div>
+                    
+                    <!-- Панель управления блоками -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                        <h3 style="margin-bottom: 15px;">Управление блоками</h3>
+                        <div id="editingIndicator" class="editing-indicator hidden" style="margin-bottom: 10px;">
+                            <span>✏️ Режим редактирования</span>
+                            <button onclick="cancelEditBlock()" class="btn-cancel-edit">Отменить</button>
+                        </div>
+                        <input type="text" id="blockName" placeholder="Название блока" style="width: 100%; margin-bottom: 10px; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">
+                        <div class="code-editor-container">
+                            <textarea id="blockHTML" placeholder="HTML код блока..." spellcheck="false" style="min-height: 150px; font-size: 12px;"></textarea>
+                        </div>
+                        <button id="addBlock" class="btn-primary" style="width: 100%; margin-top: 10px; padding: 10px;">Добавить блок</button>
+                    </div>
                 </div>
 
                 <!-- Центральная панель - конструктор -->
