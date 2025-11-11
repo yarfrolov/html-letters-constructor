@@ -972,21 +972,53 @@ function saveBlockEdits() {
     const originalDiv = document.createElement('div');
     originalDiv.innerHTML = originalHtml;
     
+    // Сохраняем стили и атрибуты всех таблиц из исходного HTML
+    const originalTables = originalDiv.querySelectorAll('table');
+    const tableStyles = [];
+    originalTables.forEach((table, idx) => {
+        tableStyles.push({
+            style: table.getAttribute('style') || '',
+            width: table.getAttribute('width') || '',
+            cellpadding: table.getAttribute('cellpadding') || '',
+            cellspacing: table.getAttribute('cellspacing') || '',
+            border: table.getAttribute('border') || '',
+            align: table.getAttribute('align') || '',
+            role: table.getAttribute('role') || ''
+        });
+    });
+    
+    // Сохраняем стили и атрибуты всех td, tr, img и других важных элементов из исходного HTML
+    // Используем селекторы для более надежного поиска
+    const originalTds = originalDiv.querySelectorAll('td');
+    const originalTrs = originalDiv.querySelectorAll('tr');
+    const originalImgs = originalDiv.querySelectorAll('img');
+    
+    const tdStyles = Array.from(originalTds).map(td => ({
+        style: td.getAttribute('style') || '',
+        width: td.getAttribute('width') || '',
+        align: td.getAttribute('align') || '',
+        valign: td.getAttribute('valign') || ''
+    }));
+    
+    const trStyles = Array.from(originalTrs).map(tr => ({
+        style: tr.getAttribute('style') || ''
+    }));
+    
+    const imgStyles = Array.from(originalImgs).map(img => ({
+        style: img.getAttribute('style') || '',
+        width: img.getAttribute('width') || '',
+        height: img.getAttribute('height') || '',
+        alt: img.getAttribute('alt') || '',
+        src: img.getAttribute('src') || ''
+    }));
+    
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = originalHtml; // Начинаем с исходного HTML
-    
-    // Сохраняем все стили из исходного HTML
-    const originalElements = originalDiv.querySelectorAll('*');
-    const originalStyles = new Map();
-    originalElements.forEach((el, idx) => {
-        if (el.getAttribute('style')) {
-            originalStyles.set(idx, el.getAttribute('style'));
-        }
-    });
     
     const editableElements = tempDiv.querySelectorAll('[data-editable], [data-editable-href], [data-editable-src], [data-editable-alt]');
     const controls = document.querySelectorAll('#editorContent [data-index]');
     
+    // Применяем изменения к редактируемым элементам
     controls.forEach(control => {
         const index = parseInt(control.dataset.index);
         const type = control.dataset.type;
@@ -1025,78 +1057,78 @@ function saveBlockEdits() {
         }
     });
     
-    // Сначала восстанавливаем все стили и атрибуты всех элементов из исходного HTML
-    // Это гарантирует, что мы не потеряем важные стили типа max-width
-    const allElements = tempDiv.querySelectorAll('*');
-    const originalAllElements = originalDiv.querySelectorAll('*');
-    const editableElementsArray = Array.from(editableElements);
-    
-    // Создаем карту для быстрого поиска соответствующих элементов
-    const elementMap = new Map();
-    allElements.forEach((el, idx) => {
-        if (idx < originalAllElements.length) {
-            elementMap.set(el, originalAllElements[idx]);
-        }
-    });
-    
-    // Восстанавливаем все стили и атрибуты из исходного HTML
-    allElements.forEach((el) => {
-        const originalEl = elementMap.get(el);
-        if (!originalEl) return;
-        
-        const originalStyle = originalEl.getAttribute('style');
-        const originalWidth = originalEl.getAttribute('width');
-        const originalCellpadding = originalEl.getAttribute('cellpadding');
-        const originalCellspacing = originalEl.getAttribute('cellspacing');
-        const originalBorder = originalEl.getAttribute('border');
-        const originalAlign = originalEl.getAttribute('align');
-        const originalRole = originalEl.getAttribute('role');
-        
-        // Восстанавливаем атрибуты
-        if (originalWidth !== null) el.setAttribute('width', originalWidth);
-        if (originalCellpadding !== null) el.setAttribute('cellpadding', originalCellpadding);
-        if (originalCellspacing !== null) el.setAttribute('cellspacing', originalCellspacing);
-        if (originalBorder !== null) el.setAttribute('border', originalBorder);
-        if (originalAlign !== null) el.setAttribute('align', originalAlign);
-        if (originalRole !== null) el.setAttribute('role', originalRole);
-        
-        // Проверяем, является ли элемент редактируемым
-        const isEditable = editableElementsArray.includes(el);
-        
-        // Восстанавливаем стили
-        if (originalStyle) {
-            if (!isEditable) {
-                // Для нередактируемых элементов полностью восстанавливаем исходные стили
-                el.setAttribute('style', originalStyle);
-            } else {
-                // Для редактируемых элементов сохраняем исходные стили, которые не были изменены
-                const currentStyleObj = parseStyleString(el.getAttribute('style') || '');
-                const originalStyleObj = parseStyleString(originalStyle);
-                // Сохраняем исходные стили, которые не были изменены через редактор
-                Object.keys(originalStyleObj).forEach(key => {
-                    if (!currentStyleObj.hasOwnProperty(key) && 
-                        !['fontWeight', 'fontSize', 'lineHeight', 'color', 'backgroundColor'].includes(key)) {
-                        currentStyleObj[key] = originalStyleObj[key];
+    // Восстанавливаем стили всех таблиц напрямую
+    const tables = tempDiv.querySelectorAll('table');
+    tables.forEach((table, idx) => {
+        if (idx < tableStyles.length) {
+            const tableData = tableStyles[idx];
+            // Восстанавливаем атрибуты
+            if (tableData.width) table.setAttribute('width', tableData.width);
+            if (tableData.cellpadding) table.setAttribute('cellpadding', tableData.cellpadding);
+            if (tableData.cellspacing) table.setAttribute('cellspacing', tableData.cellspacing);
+            if (tableData.border) table.setAttribute('border', tableData.border);
+            if (tableData.align) table.setAttribute('align', tableData.align);
+            if (tableData.role) table.setAttribute('role', tableData.role);
+            
+            // Восстанавливаем стили, но обновляем background если нужно
+            if (tableData.style) {
+                const styleObj = parseStyleString(tableData.style);
+                // Если это главная таблица и есть input для фона, обновляем background
+                if (idx === 0) {
+                    const blockBgInput = document.getElementById('blockBackgroundColor');
+                    if (blockBgInput) {
+                        styleObj.background = blockBgInput.value;
                     }
-                });
-                el.setAttribute('style', objectToStyleString(currentStyleObj));
+                }
+                table.setAttribute('style', objectToStyleString(styleObj));
+            } else if (idx === 0) {
+                // Если у таблицы не было стилей, но нужно обновить фон
+                const blockBgInput = document.getElementById('blockBackgroundColor');
+                if (blockBgInput) {
+                    table.setAttribute('style', `background: ${blockBgInput.value};`);
+                }
             }
         }
     });
     
-    // Теперь обновляем фон таблицы, сохраняя все остальные стили
-    const blockBgInput = document.getElementById('blockBackgroundColor');
-    if (blockBgInput) {
-        const mainTable = tempDiv.querySelector('table');
-        if (mainTable) {
-            // Получаем текущие стили таблицы (уже восстановленные из исходного HTML)
-            const currentTableStyle = mainTable.getAttribute('style') || '';
-            const styleObj = parseStyleString(currentTableStyle);
-            // Обновляем только background, сохраняя все остальные стили (включая max-width)
-            styleObj.background = blockBgInput.value;
-            mainTable.setAttribute('style', objectToStyleString(styleObj));
+    // Восстанавливаем стили td элементов
+    const tds = tempDiv.querySelectorAll('td');
+    tds.forEach((td, idx) => {
+        if (idx < tdStyles.length) {
+            const tdData = tdStyles[idx];
+            if (tdData.width) td.setAttribute('width', tdData.width);
+            if (tdData.align) td.setAttribute('align', tdData.align);
+            if (tdData.valign) td.setAttribute('valign', tdData.valign);
+            if (tdData.style) {
+                // Сохраняем стили td, но не перезаписываем если элемент редактируемый
+                if (!editableElementsArray.includes(td)) {
+                    td.setAttribute('style', tdData.style);
+                }
+            }
         }
-    }
+    });
+    
+    // Восстанавливаем стили tr элементов
+    const trs = tempDiv.querySelectorAll('tr');
+    trs.forEach((tr, idx) => {
+        if (idx < trStyles.length && trStyles[idx].style) {
+            tr.setAttribute('style', trStyles[idx].style);
+        }
+    });
+    
+    // Восстанавливаем стили img элементов (кроме редактируемых)
+    const imgs = tempDiv.querySelectorAll('img');
+    imgs.forEach((img, idx) => {
+        if (idx < imgStyles.length) {
+            const imgData = imgStyles[idx];
+            // Восстанавливаем только если это не редактируемый элемент
+            if (!editableElementsArray.includes(img)) {
+                if (imgData.width) img.setAttribute('width', imgData.width);
+                if (imgData.height) img.setAttribute('height', imgData.height);
+                if (imgData.style) img.setAttribute('style', imgData.style);
+            }
+        }
+    });
     
     block.html = tempDiv.innerHTML;
     
