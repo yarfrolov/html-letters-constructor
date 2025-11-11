@@ -1016,6 +1016,7 @@ function saveBlockEdits() {
     tempDiv.innerHTML = originalHtml; // Начинаем с исходного HTML
     
     const editableElements = tempDiv.querySelectorAll('[data-editable], [data-editable-href], [data-editable-src], [data-editable-alt]');
+    const editableElementsArray = Array.from(editableElements);
     const controls = document.querySelectorAll('#editorContent [data-index]');
     
     // Применяем изменения к редактируемым элементам
@@ -1057,7 +1058,7 @@ function saveBlockEdits() {
         }
     });
     
-    // Восстанавливаем стили всех таблиц напрямую
+    // Восстанавливаем стили всех таблиц напрямую (это не влияет на редактируемые элементы)
     const tables = tempDiv.querySelectorAll('table');
     tables.forEach((table, idx) => {
         if (idx < tableStyles.length) {
@@ -1091,19 +1092,19 @@ function saveBlockEdits() {
         }
     });
     
-    // Восстанавливаем стили td элементов
+    // Восстанавливаем стили td элементов (только для нередактируемых)
     const tds = tempDiv.querySelectorAll('td');
     tds.forEach((td, idx) => {
+        // Пропускаем редактируемые элементы
+        if (editableElementsArray.includes(td)) return;
+        
         if (idx < tdStyles.length) {
             const tdData = tdStyles[idx];
             if (tdData.width) td.setAttribute('width', tdData.width);
             if (tdData.align) td.setAttribute('align', tdData.align);
             if (tdData.valign) td.setAttribute('valign', tdData.valign);
             if (tdData.style) {
-                // Сохраняем стили td, но не перезаписываем если элемент редактируемый
-                if (!editableElementsArray.includes(td)) {
-                    td.setAttribute('style', tdData.style);
-                }
+                td.setAttribute('style', tdData.style);
             }
         }
     });
@@ -1116,17 +1117,17 @@ function saveBlockEdits() {
         }
     });
     
-    // Восстанавливаем стили img элементов (кроме редактируемых)
+    // Восстанавливаем стили img элементов (только для нередактируемых)
     const imgs = tempDiv.querySelectorAll('img');
     imgs.forEach((img, idx) => {
+        // Пропускаем редактируемые элементы
+        if (editableElementsArray.includes(img)) return;
+        
         if (idx < imgStyles.length) {
             const imgData = imgStyles[idx];
-            // Восстанавливаем только если это не редактируемый элемент
-            if (!editableElementsArray.includes(img)) {
-                if (imgData.width) img.setAttribute('width', imgData.width);
-                if (imgData.height) img.setAttribute('height', imgData.height);
-                if (imgData.style) img.setAttribute('style', imgData.style);
-            }
+            if (imgData.width) img.setAttribute('width', imgData.width);
+            if (imgData.height) img.setAttribute('height', imgData.height);
+            if (imgData.style) img.setAttribute('style', imgData.style);
         }
     });
     
