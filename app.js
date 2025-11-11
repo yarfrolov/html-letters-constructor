@@ -6,14 +6,13 @@ let currentAdminEditingBlock = null;
 let currentEditorContext = null;
 
 // Версия дефолтных блоков
-const BLOCKS_VERSION = '2025-11-10-welcome-urls-v2';
+const BLOCKS_VERSION = '2025-11-10-welcome-urls-v3';
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
     loadBlocksFromStorage();
     initializeEventListeners();
     renderAvailableBlocks();
-    renderAdminBlocks();
 });
 
 // Загрузка блоков из localStorage
@@ -33,7 +32,8 @@ function loadBlocksFromStorage() {
         }
     }
 
-        loadDefaultBlocks();
+    // Если блоки не загружены или версия не совпадает, загружаем по умолчанию
+    loadDefaultBlocks();
 }
 
 // Загрузка блоков по умолчанию
@@ -300,6 +300,7 @@ function importBlocks(event) {
 // Сохранение блоков в localStorage
 function saveBlocksToStorage() {
     localStorage.setItem('emailBlocks', JSON.stringify(blocks));
+    localStorage.setItem('emailBlocksVersion', BLOCKS_VERSION);
 }
 
 // Генерация уникального ID
@@ -400,9 +401,8 @@ function deleteBlock(blockId) {
     renderAvailableBlocks();
 }
 
-// Отображение блоков в админ панели
+// Отображение блоков в админ панели (теперь просто обновляет список)
 function renderAdminBlocks() {
-    // Теперь блоки отображаются через renderAvailableBlocks
     renderAvailableBlocks();
 }
 
