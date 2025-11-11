@@ -1025,66 +1025,78 @@ function saveBlockEdits() {
         }
     });
     
-    const blockBgInput = document.getElementById('blockBackgroundColor');
-    if (blockBgInput) {
-        const mainTable = tempDiv.querySelector('table');
-        if (mainTable) {
-            // Сохраняем исходные стили таблицы и добавляем/обновляем только background
-            const originalTableStyle = originalDiv.querySelector('table')?.getAttribute('style') || '';
-            const styleObj = parseStyleString(originalTableStyle);
-            styleObj.background = blockBgInput.value;
-            mainTable.setAttribute('style', objectToStyleString(styleObj));
-        }
-    }
-    
-    // Восстанавливаем все стили элементов, которые не были отредактированы
+    // Сначала восстанавливаем все стили и атрибуты всех элементов из исходного HTML
+    // Это гарантирует, что мы не потеряем важные стили типа max-width
     const allElements = tempDiv.querySelectorAll('*');
     const originalAllElements = originalDiv.querySelectorAll('*');
     const editableElementsArray = Array.from(editableElements);
     
+    // Создаем карту для быстрого поиска соответствующих элементов
+    const elementMap = new Map();
     allElements.forEach((el, idx) => {
         if (idx < originalAllElements.length) {
-            const originalEl = originalAllElements[idx];
-            const originalStyle = originalEl.getAttribute('style');
-            const originalWidth = originalEl.getAttribute('width');
-            const originalCellpadding = originalEl.getAttribute('cellpadding');
-            const originalCellspacing = originalEl.getAttribute('cellspacing');
-            const originalBorder = originalEl.getAttribute('border');
-            const originalAlign = originalEl.getAttribute('align');
-            const originalRole = originalEl.getAttribute('role');
-            
-            // Восстанавливаем атрибуты, если они были в исходном элементе
-            if (originalWidth !== null) el.setAttribute('width', originalWidth);
-            if (originalCellpadding !== null) el.setAttribute('cellpadding', originalCellpadding);
-            if (originalCellspacing !== null) el.setAttribute('cellspacing', originalCellspacing);
-            if (originalBorder !== null) el.setAttribute('border', originalBorder);
-            if (originalAlign !== null) el.setAttribute('align', originalAlign);
-            if (originalRole !== null) el.setAttribute('role', originalRole);
-            
-            // Проверяем, является ли элемент редактируемым
-            const isEditable = editableElementsArray.includes(el);
-            
-            // Восстанавливаем стили
-            if (originalStyle) {
-                if (!isEditable) {
-                    // Для нередактируемых элементов полностью восстанавливаем исходные стили
-                    el.setAttribute('style', originalStyle);
-                } else {
-                    // Для редактируемых элементов сохраняем исходные стили, которые не были изменены
-                    const currentStyleObj = parseStyleString(el.getAttribute('style') || '');
-                    const originalStyleObj = parseStyleString(originalStyle);
-                    // Сохраняем исходные стили, которые не были изменены через редактор
-                    Object.keys(originalStyleObj).forEach(key => {
-                        if (!currentStyleObj.hasOwnProperty(key) && 
-                            !['fontWeight', 'fontSize', 'lineHeight', 'color', 'backgroundColor'].includes(key)) {
-                            currentStyleObj[key] = originalStyleObj[key];
-                        }
-                    });
-                    el.setAttribute('style', objectToStyleString(currentStyleObj));
-                }
+            elementMap.set(el, originalAllElements[idx]);
+        }
+    });
+    
+    // Восстанавливаем все стили и атрибуты из исходного HTML
+    allElements.forEach((el) => {
+        const originalEl = elementMap.get(el);
+        if (!originalEl) return;
+        
+        const originalStyle = originalEl.getAttribute('style');
+        const originalWidth = originalEl.getAttribute('width');
+        const originalCellpadding = originalEl.getAttribute('cellpadding');
+        const originalCellspacing = originalEl.getAttribute('cellspacing');
+        const originalBorder = originalEl.getAttribute('border');
+        const originalAlign = originalEl.getAttribute('align');
+        const originalRole = originalEl.getAttribute('role');
+        
+        // Восстанавливаем атрибуты
+        if (originalWidth !== null) el.setAttribute('width', originalWidth);
+        if (originalCellpadding !== null) el.setAttribute('cellpadding', originalCellpadding);
+        if (originalCellspacing !== null) el.setAttribute('cellspacing', originalCellspacing);
+        if (originalBorder !== null) el.setAttribute('border', originalBorder);
+        if (originalAlign !== null) el.setAttribute('align', originalAlign);
+        if (originalRole !== null) el.setAttribute('role', originalRole);
+        
+        // Проверяем, является ли элемент редактируемым
+        const isEditable = editableElementsArray.includes(el);
+        
+        // Восстанавливаем стили
+        if (originalStyle) {
+            if (!isEditable) {
+                // Для нередактируемых элементов полностью восстанавливаем исходные стили
+                el.setAttribute('style', originalStyle);
+            } else {
+                // Для редактируемых элементов сохраняем исходные стили, которые не были изменены
+                const currentStyleObj = parseStyleString(el.getAttribute('style') || '');
+                const originalStyleObj = parseStyleString(originalStyle);
+                // Сохраняем исходные стили, которые не были изменены через редактор
+                Object.keys(originalStyleObj).forEach(key => {
+                    if (!currentStyleObj.hasOwnProperty(key) && 
+                        !['fontWeight', 'fontSize', 'lineHeight', 'color', 'backgroundColor'].includes(key)) {
+                        currentStyleObj[key] = originalStyleObj[key];
+                    }
+                });
+                el.setAttribute('style', objectToStyleString(currentStyleObj));
             }
         }
     });
+    
+    // Теперь обновляем фон таблицы, сохраняя все остальные стили
+    const blockBgInput = document.getElementById('blockBackgroundColor');
+    if (blockBgInput) {
+        const mainTable = tempDiv.querySelector('table');
+        if (mainTable) {
+            // Получаем текущие стили таблицы (уже восстановленные из исходного HTML)
+            const currentTableStyle = mainTable.getAttribute('style') || '';
+            const styleObj = parseStyleString(currentTableStyle);
+            // Обновляем только background, сохраняя все остальные стили (включая max-width)
+            styleObj.background = blockBgInput.value;
+            mainTable.setAttribute('style', objectToStyleString(styleObj));
+        }
+    }
     
     block.html = tempDiv.innerHTML;
     
