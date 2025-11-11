@@ -593,7 +593,7 @@ function editBlock(blockId) {
 
     currentEditingBlock = blockId;
     currentAdminEditingBlock = null;
-    currentEditorContext = { type: 'email', blockId };
+    currentEditorContext = { type: 'email', blockId, originalHtml: block.html };
 
     setEditorModeButtons('visual');
     currentEditorMode = 'visual';
@@ -607,7 +607,7 @@ function editAdminBlockVisual(blockId) {
 
     currentAdminEditingBlock = blockId;
     currentEditingBlock = null;
-    currentEditorContext = { type: 'admin', blockId };
+    currentEditorContext = { type: 'admin', blockId, originalHtml: block.html };
 
     setEditorModeButtons('visual');
     currentEditorMode = 'visual';
@@ -747,7 +747,6 @@ function renderVisualBlockEditor(block) {
                 const computedStyle = element.style || {};
                 const currentColor = computedStyle.color || getComputedColor(element, 'color') || '#333333';
                 const currentBgColor = computedStyle.backgroundColor || getComputedColor(element, 'background-color') || '#ffffff';
-                const currentLineHeight = computedStyle.lineHeight || getComputedStyle(element, 'line-height') || '1.5';
                 const currentFontWeight = computedStyle.fontWeight || window.getComputedStyle(element).fontWeight || 'normal';
                 const isBold = currentFontWeight === 'bold' || currentFontWeight === '700' || parseInt(currentFontWeight) >= 700;
                 
@@ -793,7 +792,7 @@ function renderVisualBlockEditor(block) {
                 lineHeightInput.min = '0.5';
                 lineHeightInput.max = '3';
                 lineHeightInput.step = '0.1';
-                let currentLineHeight = computedStyle.lineHeight || getComputedStyle(element, 'line-height') || '1.5';
+                let currentLineHeight = element.style.lineHeight || getComputedStyle(element, 'line-height') || window.getComputedStyle(element).lineHeight || '1.5';
                 if (currentLineHeight === 'normal') {
                     currentLineHeight = '1.5';
                 }
@@ -928,13 +927,62 @@ function renderVisualBlockEditor(block) {
     editorPanel.classList.remove('hidden');
 }
 
+// Вспомогательные функции для работы со стилями
+function parseStyleString(styleString) {
+    const styleObj = {};
+    if (!styleString) return styleObj;
+    
+    const styles = styleString.split(';');
+    styles.forEach(style => {
+        const trimmed = style.trim();
+        if (trimmed) {
+            const [key, ...valueParts] = trimmed.split(':');
+            if (key && valueParts.length > 0) {
+                const value = valueParts.join(':').trim();
+                styleObj[key.trim()] = value;
+            }
+        }
+    });
+    return styleObj;
+}
+
+function objectToStyleString(styleObj) {
+    return Object.entries(styleObj)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('; ');
+}
+
+function mergeStyles(originalStyle, currentStyle) {
+    const originalObj = parseStyleString(originalStyle);
+    const currentObj = parseStyleString(currentStyle);
+    
+    // Объединяем: сначала исходные стили, затем текущие (текущие имеют приоритет)
+    const merged = { ...originalObj, ...currentObj };
+    return objectToStyleString(merged);
+}
+
 // Сохранение изменений блока
 function saveBlockEdits() {
     const block = getCurrentContextBlock();
     if (!block) return;
     
+    // Используем исходный HTML из контекста, если он есть, иначе текущий HTML блока
+    const originalHtml = currentEditorContext?.originalHtml || block.html;
+    
+    const originalDiv = document.createElement('div');
+    originalDiv.innerHTML = originalHtml;
+    
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = block.html;
+    tempDiv.innerHTML = originalHtml; // Начинаем с исходного HTML
+    
+    // Сохраняем все стили из исходного HTML
+    const originalElements = originalDiv.querySelectorAll('*');
+    const originalStyles = new Map();
+    originalElements.forEach((el, idx) => {
+        if (el.getAttribute('style')) {
+            originalStyles.set(idx, el.getAttribute('style'));
+        }
+    });
     
     const editableElements = tempDiv.querySelectorAll('[data-editable], [data-editable-href], [data-editable-src], [data-editable-alt]');
     const controls = document.querySelectorAll('#editorContent [data-index]');
@@ -981,9 +1029,62 @@ function saveBlockEdits() {
     if (blockBgInput) {
         const mainTable = tempDiv.querySelector('table');
         if (mainTable) {
-            mainTable.style.background = blockBgInput.value;
+            // Сохраняем исходные стили таблицы и добавляем/обновляем только background
+            const originalTableStyle = originalDiv.querySelector('table')?.getAttribute('style') || '';
+            const styleObj = parseStyleString(originalTableStyle);
+            styleObj.background = blockBgInput.value;
+            mainTable.setAttribute('style', objectToStyleString(styleObj));
         }
     }
+    
+    // Восстанавливаем все стили элементов, которые не были отредактированы
+    const allElements = tempDiv.querySelectorAll('*');
+    const originalAllElements = originalDiv.querySelectorAll('*');
+    const editableElementsArray = Array.from(editableElements);
+    
+    allElements.forEach((el, idx) => {
+        if (idx < originalAllElements.length) {
+            const originalEl = originalAllElements[idx];
+            const originalStyle = originalEl.getAttribute('style');
+            const originalWidth = originalEl.getAttribute('width');
+            const originalCellpadding = originalEl.getAttribute('cellpadding');
+            const originalCellspacing = originalEl.getAttribute('cellspacing');
+            const originalBorder = originalEl.getAttribute('border');
+            const originalAlign = originalEl.getAttribute('align');
+            const originalRole = originalEl.getAttribute('role');
+            
+            // Восстанавливаем атрибуты, если они были в исходном элементе
+            if (originalWidth !== null) el.setAttribute('width', originalWidth);
+            if (originalCellpadding !== null) el.setAttribute('cellpadding', originalCellpadding);
+            if (originalCellspacing !== null) el.setAttribute('cellspacing', originalCellspacing);
+            if (originalBorder !== null) el.setAttribute('border', originalBorder);
+            if (originalAlign !== null) el.setAttribute('align', originalAlign);
+            if (originalRole !== null) el.setAttribute('role', originalRole);
+            
+            // Проверяем, является ли элемент редактируемым
+            const isEditable = editableElementsArray.includes(el);
+            
+            // Восстанавливаем стили
+            if (originalStyle) {
+                if (!isEditable) {
+                    // Для нередактируемых элементов полностью восстанавливаем исходные стили
+                    el.setAttribute('style', originalStyle);
+                } else {
+                    // Для редактируемых элементов сохраняем исходные стили, которые не были изменены
+                    const currentStyleObj = parseStyleString(el.getAttribute('style') || '');
+                    const originalStyleObj = parseStyleString(originalStyle);
+                    // Сохраняем исходные стили, которые не были изменены через редактор
+                    Object.keys(originalStyleObj).forEach(key => {
+                        if (!currentStyleObj.hasOwnProperty(key) && 
+                            !['fontWeight', 'fontSize', 'lineHeight', 'color', 'backgroundColor'].includes(key)) {
+                            currentStyleObj[key] = originalStyleObj[key];
+                        }
+                    });
+                    el.setAttribute('style', objectToStyleString(currentStyleObj));
+                }
+            }
+        }
+    });
     
     block.html = tempDiv.innerHTML;
     
