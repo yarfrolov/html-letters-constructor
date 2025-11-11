@@ -972,11 +972,25 @@ function saveBlockEdits() {
     const originalDiv = document.createElement('div');
     originalDiv.innerHTML = originalHtml;
     
-    // Сохраняем стили и атрибуты всех таблиц из исходного HTML
+    // Сохраняем стили главной таблицы отдельно (первая таблица в корне)
+    const originalMainTable = originalDiv.querySelector('table');
+    const mainTableStyle = originalMainTable ? {
+        style: originalMainTable.getAttribute('style') || '',
+        width: originalMainTable.getAttribute('width') || '',
+        cellpadding: originalMainTable.getAttribute('cellpadding') || '',
+        cellspacing: originalMainTable.getAttribute('cellspacing') || '',
+        border: originalMainTable.getAttribute('border') || '',
+        align: originalMainTable.getAttribute('align') || '',
+        role: originalMainTable.getAttribute('role') || ''
+    } : null;
+    
+    // Сохраняем стили и атрибуты всех остальных таблиц из исходного HTML
     const originalTables = originalDiv.querySelectorAll('table');
     const tableStyles = [];
     originalTables.forEach((table, idx) => {
-        // Получаем стиль напрямую из атрибута, чтобы сохранить все свойства включая max-width
+        // Пропускаем главную таблицу, она уже сохранена
+        if (idx === 0 && mainTableStyle) return;
+        
         const styleAttr = table.getAttribute('style');
         tableStyles.push({
             style: styleAttr || '',
@@ -1060,11 +1074,52 @@ function saveBlockEdits() {
         }
     });
     
-    // Восстанавливаем стили всех таблиц напрямую (это не влияет на редактируемые элементы)
+    // Восстанавливаем стили главной таблицы напрямую (это гарантирует сохранение max-width)
+    const mainTable = tempDiv.querySelector('table');
+    if (mainTable && mainTableStyle) {
+        // Восстанавливаем атрибуты
+        if (mainTableStyle.width) mainTable.setAttribute('width', mainTableStyle.width);
+        if (mainTableStyle.cellpadding) mainTable.setAttribute('cellpadding', mainTableStyle.cellpadding);
+        if (mainTableStyle.cellspacing) mainTable.setAttribute('cellspacing', mainTableStyle.cellspacing);
+        if (mainTableStyle.border) mainTable.setAttribute('border', mainTableStyle.border);
+        if (mainTableStyle.align) mainTable.setAttribute('align', mainTableStyle.align);
+        if (mainTableStyle.role) mainTable.setAttribute('role', mainTableStyle.role);
+        
+        // Восстанавливаем стили
+        if (mainTableStyle.style && mainTableStyle.style.trim()) {
+            // Парсим исходные стили
+            const styleObj = parseStyleString(mainTableStyle.style);
+            
+            // Обновляем background если есть input для фона
+            const blockBgInput = document.getElementById('blockBackgroundColor');
+            if (blockBgInput) {
+                // Обновляем background, сохраняя все остальные стили (включая max-width)
+                styleObj.background = blockBgInput.value;
+                // Удаляем background-color если есть, чтобы избежать дублирования
+                delete styleObj['background-color'];
+            }
+            
+            // Восстанавливаем стиль с сохранением всех свойств, включая max-width
+            const restoredStyle = objectToStyleString(styleObj);
+            mainTable.setAttribute('style', restoredStyle);
+        } else {
+            // Если у таблицы не было стилей, но нужно обновить фон
+            const blockBgInput = document.getElementById('blockBackgroundColor');
+            if (blockBgInput) {
+                mainTable.setAttribute('style', `background: ${blockBgInput.value};`);
+            }
+        }
+    }
+    
+    // Восстанавливаем стили остальных таблиц
     const tables = tempDiv.querySelectorAll('table');
-    tables.forEach((table, idx) => {
-        if (idx < tableStyles.length) {
-            const tableData = tableStyles[idx];
+    let tableIdx = 0;
+    tables.forEach((table) => {
+        // Пропускаем главную таблицу
+        if (table === mainTable) return;
+        
+        if (tableIdx < tableStyles.length) {
+            const tableData = tableStyles[tableIdx];
             // Восстанавливаем атрибуты
             if (tableData.width) table.setAttribute('width', tableData.width);
             if (tableData.cellpadding) table.setAttribute('cellpadding', tableData.cellpadding);
@@ -1075,39 +1130,10 @@ function saveBlockEdits() {
             
             // Восстанавливаем стили
             if (tableData.style && tableData.style.trim()) {
-                // Парсим исходные стили
-                const styleObj = parseStyleString(tableData.style);
-                
-                // Если это главная таблица и есть input для фона, обновляем background
-                if (idx === 0) {
-                    const blockBgInput = document.getElementById('blockBackgroundColor');
-                    if (blockBgInput) {
-                        // Обновляем background, сохраняя все остальные стили (включая max-width)
-                        styleObj.background = blockBgInput.value;
-                        // Удаляем background-color если есть, чтобы избежать дублирования
-                        delete styleObj['background-color'];
-                    }
-                }
-                
-                // Восстанавливаем стиль с сохранением всех свойств, включая max-width
-                const restoredStyle = objectToStyleString(styleObj);
-                // Убеждаемся, что max-width сохранился (для отладки)
-                if (idx === 0 && tableData.style.includes('max-width') && !restoredStyle.includes('max-width')) {
-                    console.warn('max-width потерялся при восстановлении!', {
-                        original: tableData.style,
-                        parsed: styleObj,
-                        restored: restoredStyle
-                    });
-                }
-                table.setAttribute('style', restoredStyle);
-            } else if (idx === 0) {
-                // Если у таблицы не было стилей, но нужно обновить фон
-                const blockBgInput = document.getElementById('blockBackgroundColor');
-                if (blockBgInput) {
-                    table.setAttribute('style', `background: ${blockBgInput.value};`);
-                }
+                table.setAttribute('style', tableData.style);
             }
         }
+        tableIdx++;
     });
     
     // Восстанавливаем стили td элементов (только для нередактируемых)
