@@ -976,8 +976,10 @@ function saveBlockEdits() {
     const originalTables = originalDiv.querySelectorAll('table');
     const tableStyles = [];
     originalTables.forEach((table, idx) => {
+        // Получаем стиль напрямую из атрибута, чтобы сохранить все свойства включая max-width
+        const styleAttr = table.getAttribute('style');
         tableStyles.push({
-            style: table.getAttribute('style') || '',
+            style: styleAttr || '',
             width: table.getAttribute('width') || '',
             cellpadding: table.getAttribute('cellpadding') || '',
             cellspacing: table.getAttribute('cellspacing') || '',
@@ -1071,17 +1073,33 @@ function saveBlockEdits() {
             if (tableData.align) table.setAttribute('align', tableData.align);
             if (tableData.role) table.setAttribute('role', tableData.role);
             
-            // Восстанавливаем стили, но обновляем background если нужно
-            if (tableData.style) {
+            // Восстанавливаем стили
+            if (tableData.style && tableData.style.trim()) {
+                // Парсим исходные стили
                 const styleObj = parseStyleString(tableData.style);
+                
                 // Если это главная таблица и есть input для фона, обновляем background
                 if (idx === 0) {
                     const blockBgInput = document.getElementById('blockBackgroundColor');
                     if (blockBgInput) {
+                        // Обновляем background, сохраняя все остальные стили (включая max-width)
                         styleObj.background = blockBgInput.value;
+                        // Удаляем background-color если есть, чтобы избежать дублирования
+                        delete styleObj['background-color'];
                     }
                 }
-                table.setAttribute('style', objectToStyleString(styleObj));
+                
+                // Восстанавливаем стиль с сохранением всех свойств, включая max-width
+                const restoredStyle = objectToStyleString(styleObj);
+                // Убеждаемся, что max-width сохранился (для отладки)
+                if (idx === 0 && tableData.style.includes('max-width') && !restoredStyle.includes('max-width')) {
+                    console.warn('max-width потерялся при восстановлении!', {
+                        original: tableData.style,
+                        parsed: styleObj,
+                        restored: restoredStyle
+                    });
+                }
+                table.setAttribute('style', restoredStyle);
             } else if (idx === 0) {
                 // Если у таблицы не было стилей, но нужно обновить фон
                 const blockBgInput = document.getElementById('blockBackgroundColor');
@@ -1714,4 +1732,5 @@ function resetEditorContext() {
     currentEditorMode = 'visual';
     setEditorModeButtons('visual');
 }
+
 
