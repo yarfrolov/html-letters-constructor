@@ -688,6 +688,13 @@ function renderVisualBlockEditor(block) {
             field.className = 'editable-field';
             
             if (element.hasAttribute('data-editable')) {
+                // Определяем текущие стили элемента ДО создания тулбара
+                const computedStyle = element.style || {};
+                const currentColor = computedStyle.color || getComputedColor(element, 'color') || '#333333';
+                const currentBgColor = computedStyle.backgroundColor || getComputedColor(element, 'background-color') || '#ffffff';
+                const currentFontWeight = computedStyle.fontWeight || window.getComputedStyle(element).fontWeight || 'normal';
+                const isBold = currentFontWeight === 'bold' || currentFontWeight === '700' || parseInt(currentFontWeight) >= 700;
+                
                 const label = document.createElement('label');
                 label.textContent = `Текст ${index + 1}:`;
                 field.appendChild(label);
@@ -838,11 +845,7 @@ function renderVisualBlockEditor(block) {
                 const stylesContainer = document.createElement('div');
                 stylesContainer.className = 'style-controls';
                 
-                const computedStyle = element.style || {};
-                const currentColor = computedStyle.color || getComputedColor(element, 'color') || '#333333';
-                const currentBgColor = computedStyle.backgroundColor || getComputedColor(element, 'background-color') || '#ffffff';
-                const currentFontWeight = computedStyle.fontWeight || window.getComputedStyle(element).fontWeight || 'normal';
-                const isBold = currentFontWeight === 'bold' || currentFontWeight === '700' || parseInt(currentFontWeight) >= 700;
+                // Переменные currentColor, currentBgColor, currentFontWeight и isBold уже определены выше
                 
                 const boldContainer = document.createElement('div');
                 boldContainer.className = 'style-control-item';
