@@ -33,7 +33,7 @@ function loadBlocksFromStorage() {
     }
 
     // Если блоки не загружены или версия не совпадает, загружаем по умолчанию
-    loadDefaultBlocks();
+        loadDefaultBlocks();
 }
 
 // Загрузка блоков по умолчанию
@@ -694,16 +694,107 @@ function renderVisualBlockEditor(block) {
                 
                 const toolbar = document.createElement('div');
                 toolbar.className = 'wysiwyg-toolbar';
-                toolbar.innerHTML = `
-                    <button type="button" onclick="formatText('bold', ${index})" title="Жирный"><b>B</b></button>
-                    <button type="button" onclick="formatText('italic', ${index})" title="Курсив"><i>I</i></button>
-                    <button type="button" onclick="formatText('underline', ${index})" title="Подчеркнутый"><u>U</u></button>
-                    <span class="toolbar-separator">|</span>
-                    <button type="button" onclick="insertLink(${index})" title="Вставить ссылку">🔗 Ссылка</button>
-                    <button type="button" onclick="formatText('insertUnorderedList', ${index})" title="Список">• Список</button>
-                    <span class="toolbar-separator">|</span>
-                    <button type="button" onclick="formatText('removeFormat', ${index})" title="Очистить">🗑️</button>
-                `;
+                
+                // Кнопка жирного
+                const boldBtn = document.createElement('button');
+                boldBtn.type = 'button';
+                boldBtn.innerHTML = '<b>B</b>';
+                boldBtn.title = 'Жирный';
+                boldBtn.onclick = () => formatText('bold', index);
+                toolbar.appendChild(boldBtn);
+                
+                // Кнопка курсива
+                const italicBtn = document.createElement('button');
+                italicBtn.type = 'button';
+                italicBtn.innerHTML = '<i>I</i>';
+                italicBtn.title = 'Курсив';
+                italicBtn.onclick = () => formatText('italic', index);
+                toolbar.appendChild(italicBtn);
+                
+                // Кнопка подчеркивания
+                const underlineBtn = document.createElement('button');
+                underlineBtn.type = 'button';
+                underlineBtn.innerHTML = '<u>U</u>';
+                underlineBtn.title = 'Подчеркнутый';
+                underlineBtn.onclick = () => formatText('underline', index);
+                toolbar.appendChild(underlineBtn);
+                
+                // Разделитель
+                const separator1 = document.createElement('span');
+                separator1.className = 'toolbar-separator';
+                separator1.textContent = '|';
+                toolbar.appendChild(separator1);
+                
+                // Кнопка цвета текста
+                const colorBtn = document.createElement('button');
+                colorBtn.type = 'button';
+                colorBtn.title = 'Цвет текста (выделите текст перед применением)';
+                colorBtn.style.position = 'relative';
+                colorBtn.style.display = 'flex';
+                colorBtn.style.alignItems = 'center';
+                colorBtn.style.gap = '4px';
+                colorBtn.style.padding = '4px 8px';
+                
+                // Индикатор текущего цвета
+                const colorIndicator = document.createElement('span');
+                colorIndicator.style.width = '16px';
+                colorIndicator.style.height = '16px';
+                colorIndicator.style.borderRadius = '2px';
+                colorIndicator.style.border = '1px solid #ccc';
+                colorIndicator.style.backgroundColor = rgbToHex(currentColor);
+                colorIndicator.style.display = 'inline-block';
+                colorBtn.appendChild(colorIndicator);
+                
+                // Иконка
+                const colorIcon = document.createElement('span');
+                colorIcon.textContent = '🎨';
+                colorBtn.appendChild(colorIcon);
+                
+                const colorPicker = document.createElement('input');
+                colorPicker.type = 'color';
+                colorPicker.style.position = 'absolute';
+                colorPicker.style.opacity = '0';
+                colorPicker.style.width = '100%';
+                colorPicker.style.height = '100%';
+                colorPicker.style.cursor = 'pointer';
+                colorPicker.value = rgbToHex(currentColor);
+                colorPicker.onchange = (e) => {
+                    applyTextColor(index, e.target.value);
+                    colorIndicator.style.backgroundColor = e.target.value;
+                };
+                colorBtn.appendChild(colorPicker);
+                toolbar.appendChild(colorBtn);
+                
+                // Кнопка ссылки
+                const linkBtn = document.createElement('button');
+                linkBtn.type = 'button';
+                linkBtn.textContent = '🔗 Ссылка';
+                linkBtn.title = 'Вставить ссылку';
+                linkBtn.onclick = () => insertLink(index);
+                toolbar.appendChild(linkBtn);
+                
+                // Кнопка списка
+                const listBtn = document.createElement('button');
+                listBtn.type = 'button';
+                listBtn.textContent = '• Список';
+                listBtn.title = 'Список';
+                listBtn.onclick = () => formatText('insertUnorderedList', index);
+                toolbar.appendChild(listBtn);
+                
+                // Разделитель
+                const separator2 = document.createElement('span');
+                separator2.className = 'toolbar-separator';
+                separator2.textContent = '|';
+                toolbar.appendChild(separator2);
+                
+                // Кнопка очистки
+                const clearBtn = document.createElement('button');
+                clearBtn.type = 'button';
+                clearBtn.textContent = '🗑️';
+                clearBtn.title = 'Очистить';
+                clearBtn.onclick = () => formatText('removeFormat', index);
+                toolbar.appendChild(clearBtn);
+                
                 wysiwygContainer.appendChild(toolbar);
                 
                 const editableDiv = document.createElement('div');
@@ -817,19 +908,7 @@ function renderVisualBlockEditor(block) {
                 lineHeightContainer.appendChild(lineHeightInput);
                 stylesContainer.appendChild(lineHeightContainer);
                 
-                const colorContainer = document.createElement('div');
-                colorContainer.className = 'style-control-item';
-                const colorLabel = document.createElement('label');
-                colorLabel.textContent = '🎨 Цвет текста:';
-                const colorInput = document.createElement('input');
-                colorInput.type = 'color';
-                colorInput.value = rgbToHex(currentColor);
-                colorInput.dataset.index = index;
-                colorInput.dataset.type = 'color';
-                colorInput.className = 'color-input';
-                colorContainer.appendChild(colorLabel);
-                colorContainer.appendChild(colorInput);
-                stylesContainer.appendChild(colorContainer);
+                // Цвет текста теперь применяется через тулбар, поэтому убираем этот контрол
                 
                 const bgColorContainer = document.createElement('div');
                 bgColorContainer.className = 'style-control-item';
@@ -1063,8 +1142,6 @@ function saveBlockEdits() {
             const unit = control.dataset.unit || '';
             const value = control.value;
             element.style.lineHeight = unit ? `${value}${unit}` : value;
-        } else if (type === 'color') {
-            element.style.color = control.value;
         } else if (type === 'backgroundColor') {
             element.style.backgroundColor = control.value;
         }
@@ -1086,8 +1163,8 @@ function saveBlockEdits() {
             Array.from(savedMainTable.attributes).forEach(attr => {
                 if (attr.name === 'style') {
                     // Для стиля обновляем только background если нужно
-                    const blockBgInput = document.getElementById('blockBackgroundColor');
-                    if (blockBgInput) {
+    const blockBgInput = document.getElementById('blockBackgroundColor');
+    if (blockBgInput) {
                         const styleObj = parseStyleString(attr.value);
                         styleObj.background = blockBgInput.value;
                         delete styleObj['background-color'];
@@ -1652,6 +1729,41 @@ function formatText(command, index) {
     
     editor.focus();
     document.execCommand(command, false, null);
+}
+
+// Применение цвета к выделенному тексту
+function applyTextColor(index, color) {
+    const editor = document.getElementById(`wysiwyg-${index}`);
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const selection = window.getSelection();
+    
+    // Если ничего не выделено, применяем ко всему тексту
+    if (selection.rangeCount === 0 || selection.toString().trim() === '') {
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+    
+    // Применяем цвет через execCommand
+    document.execCommand('foreColor', false, color);
+    
+    // Заменяем <font> теги на <span> с inline стилем (для совместимости с email)
+    const fontTags = editor.querySelectorAll('font[color]');
+    fontTags.forEach(font => {
+        const span = document.createElement('span');
+        span.style.color = font.getAttribute('color');
+        while (font.firstChild) {
+            span.appendChild(font.firstChild);
+        }
+        font.parentNode.replaceChild(span, font);
+    });
+    
+    // Убираем выделение
+    selection.removeAllRanges();
 }
 
 // Вставка ссылки
