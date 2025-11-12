@@ -678,7 +678,10 @@ function renderVisualBlockEditor(block) {
     editorContent.appendChild(separator);
     
     if (editableElements.length === 0) {
-        editorContent.innerHTML += '<p style="color: #999;">Этот блок не содержит редактируемых элементов</p>';
+        const noElementsMsg = document.createElement('p');
+        noElementsMsg.style.color = '#999';
+        noElementsMsg.textContent = 'Этот блок не содержит редактируемых элементов';
+        editorContent.appendChild(noElementsMsg);
     } else {
         editableElements.forEach((element, index) => {
             const field = document.createElement('div');
@@ -994,14 +997,15 @@ function renderVisualBlockEditor(block) {
             
             editorContent.appendChild(field);
         });
-    }
         
+        // Добавляем кнопку сохранения только если есть редактируемые элементы
         const saveBtn = document.createElement('button');
         saveBtn.className = 'btn-primary';
         saveBtn.textContent = 'Сохранить изменения';
         saveBtn.style.marginTop = '20px';
         saveBtn.addEventListener('click', saveBlockEdits);
         editorContent.appendChild(saveBtn);
+    }
     
     editorPanel.classList.remove('hidden');
 }
